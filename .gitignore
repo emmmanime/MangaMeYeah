@@ -1,0 +1,28 @@
+# .NET / C# / WPF
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.nupkg
+*.snupkg
+
+# Rust
+target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS / Local settings
+.DS_Store
+Thumbs.db
+desktop.ini
+*.local.json
+*.local.ini
