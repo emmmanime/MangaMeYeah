@@ -1,0 +1,52 @@
+<Window x:Class="MangaMeYeah.VersionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="バージョン情報"
+        Width="340"
+        Height="165"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- アプリ名・バージョン -->
+        <TextBlock Grid.Row="0"
+                   Grid.Column="0"
+                   Text="MangaMeYeah 0.1.0"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="4,4,12,8" />
+
+        <!-- OKボタン（本家MangaMeeya同様に右上配置） -->
+        <Button Grid.Row="0"
+                Grid.Column="1"
+                Content="OK"
+                Width="75"
+                Height="24"
+                IsDefault="True"
+                IsCancel="True"
+                Click="OkButton_Click" />
+
+        <!-- GitHub URL リンク -->
+        <TextBlock Grid.Row="1"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="2"
+                   Margin="4,12,4,0">
+            <Hyperlink NavigateUri="https://github.com/emmmanime/MangaMeYeah"
+                       RequestNavigate="Hyperlink_RequestNavigate">
+                https://github.com/emmmanime/MangaMeYeah
+            </Hyperlink>
+        </TextBlock>
+    </Grid>
+</Window>
