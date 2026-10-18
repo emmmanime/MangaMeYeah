@@ -1,0 +1,60 @@
+<Window x:Class="MangaMeYeah.RegistrySettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="レジストリ関連設定"
+        Width="480"
+        Height="250"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="エクスプローラーの右クリックメニューに「MangaMeYeahで開く」を追加・削除します。"
+                   Margin="0,0,0,12" />
+
+        <GroupBox Grid.Row="1" Header="エクスプローラー右クリックメニュー連携 (HKCU)" Padding="10,8">
+            <StackPanel>
+                <CheckBox x:Name="FolderMenuCheckBox"
+                          Content="フォルダの右クリックメニューに「MangaMeYeahで開く」を追加"
+                          IsChecked="True"
+                          Margin="0,4,0,8" />
+                <CheckBox x:Name="FolderBgMenuCheckBox"
+                          Content="フォルダ背景(空白部)の右クリックに「このフォルダをMangaMeYeahで開く」を追加"
+                          IsChecked="True"
+                          Margin="0,0,0,8" />
+                <CheckBox x:Name="FileMenuCheckBox"
+                          Content="ファイルの右クリックメニューに「MangaMeYeahで開く」を追加"
+                          IsChecked="True"
+                          Margin="0,0,0,4" />
+            </StackPanel>
+        </GroupBox>
+
+        <DockPanel Grid.Row="2" Margin="0,12,0,0">
+            <Button Content="すべてクリア (解除)"
+                    DockPanel.Dock="Left"
+                    Width="130"
+                    Height="26"
+                    Click="ClearAllButton_Click" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="登録・更新 (OK)"
+                        Width="110"
+                        Height="26"
+                        IsDefault="True"
+                        Margin="0,0,8,0"
+                        Click="OkButton_Click" />
+                <Button Content="キャンセル"
+                        Width="85"
+                        Height="26"
+                        IsCancel="True"
+                        Click="CancelButton_Click" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

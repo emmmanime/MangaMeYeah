@@ -20,9 +20,10 @@
         </Grid.ColumnDefinitions>
 
         <!-- アプリ名・バージョン -->
-        <TextBlock Grid.Row="0"
+        <TextBlock x:Name="VersionTextBlock"
+                   Grid.Row="0"
                    Grid.Column="0"
-                   Text="MangaMeYeah 0.1.0"
+                   Text="MangaMeYeah 0.2.1"
                    FontSize="14"
                    FontWeight="Bold"
                    VerticalAlignment="Center"

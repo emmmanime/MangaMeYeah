@@ -1,0 +1,563 @@
+<Window x:Class="MangaMeYeah.PreferencesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="環境設定"
+        Width="610"
+        Height="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="#F0F0F0">
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Padding" Value="8,6,8,6" />
+            <Setter Property="BorderBrush" Value="#CCCCCC" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,3,12,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,3,14,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" Background="#F9F9F9" Padding="8">
+            <!-- ========================================================= -->
+            <!-- タブ 1: 操作設定 (Dialog ID: 1506)                         -->
+            <!-- ========================================================= -->
+            <TabItem Header="操作設定">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <GroupBox Header="スケール">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,4">
+                                    <TextBlock Text="拡大縮小の変化率" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox x:Name="ZoomStepTextBox" Width="54" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="%" VerticalAlignment="Center" Margin="4,0,28,0" />
+
+                                    <TextBlock Text="現在のスケール" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox x:Name="CurrentScaleTextBox" Width="54" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="%" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                </WrapPanel>
+                                <CheckBox x:Name="ResetScaleOnSameModeCheck"
+                                          Content="同スケールモード選択時、原寸サイズに戻し倍率固定モードに移行する"
+                                          Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="移動">
+                            <StackPanel>
+                                <Grid Margin="0,2,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="135" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="26" />
+                                        <RowDefinition Height="26" />
+                                        <RowDefinition Height="26" />
+                                        <RowDefinition Height="26" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="次へ進む/前へ戻る" VerticalAlignment="Center" />
+                                    <TextBox x:Name="StepNextPrevTextBox" Grid.Row="0" Grid.Column="1" Width="54" HorizontalAlignment="Left" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="※複数枚表示時は×表示枚数" Foreground="#555555" VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="PAGEUP/PAGEDOWN" VerticalAlignment="Center" />
+                                    <TextBox x:Name="PageUpDownCountTextBox" Grid.Row="1" Grid.Column="1" Width="54" HorizontalAlignment="Left" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="※2ページ表示時は×2" Foreground="#555555" VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="固定ページ移動" VerticalAlignment="Center" />
+                                    <TextBox x:Name="FixedJumpTextBox" Grid.Row="2" Grid.Column="1" Width="54" HorizontalAlignment="Left" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="固定ページ割合移動" VerticalAlignment="Center" />
+                                    <TextBox x:Name="FixedRatioJumpTextBox" Grid.Row="3" Grid.Column="1" Width="54" HorizontalAlignment="Left" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Text="※設定回数の移動で先頭から最終ページまで移動" Foreground="#555555" FontSize="11" VerticalAlignment="Center" />
+                                </Grid>
+                                <CheckBox x:Name="CheckImageSizeOnMoveCheck"
+                                          Content="画像サイズをチェックして移動する(自動見開き設定時のみ作用)"
+                                          Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="スクロール">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,4">
+                                    <TextBlock Text="ドラッグスクロール(1)移動量" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox x:Name="DragScroll1TextBox" Width="48" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="pixel" VerticalAlignment="Center" Margin="4,0,20,0" />
+
+                                    <TextBlock Text="ドラッグスクロール(2)移動量" VerticalAlignment="Center" Foreground="#888888" Margin="0,0,8,0" />
+                                    <TextBox Width="48" Text="5" IsEnabled="False" />
+                                    <TextBlock Text="pixel" VerticalAlignment="Center" Foreground="#888888" Margin="4,0,0,0" />
+                                </WrapPanel>
+
+                                <WrapPanel Margin="0,2,0,4">
+                                    <TextBlock Text="キーボード操作によるスクロール移動量:" VerticalAlignment="Center" Width="210" />
+                                    <TextBlock Text="水平(横)" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <TextBox x:Name="KeyScrollXTextBox" Width="48" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="垂直(縦)" VerticalAlignment="Center" Margin="14,0,4,0" />
+                                    <TextBox x:Name="KeyScrollYTextBox" Width="48" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                </WrapPanel>
+
+                                <WrapPanel Margin="0,2,0,4">
+                                    <TextBlock Text="マウスホイール操作によるスクロール移動量:" VerticalAlignment="Center" Width="210" />
+                                    <TextBlock Text="水平(横)" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <TextBox x:Name="WheelScrollXTextBox" Width="48" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="垂直(縦)" VerticalAlignment="Center" Margin="14,0,4,0" />
+                                    <TextBox x:Name="WheelScrollYTextBox" Width="48" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                </WrapPanel>
+
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="スクロール移動量基準:" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <RadioButton x:Name="ScrollUnitWindowRadio" Content="ウインドウサイズ(%)" GroupName="ScrollUnit" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="ScrollUnitImageRadio" Content="画像サイズ(%)" GroupName="ScrollUnit" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="ScrollUnitPixelRadio" Content="固定値(pixel)" GroupName="ScrollUnit" Checked="SettingControl_Changed" />
+                                </WrapPanel>
+
+                                <Separator Margin="0,4" />
+
+                                <WrapPanel IsEnabled="False" Margin="0,2">
+                                    <CheckBox Content="スムーズスクロールを使用する" IsChecked="False" />
+                                    <TextBlock Text="速度" VerticalAlignment="Center" Margin="12,0,4,0" />
+                                    <TextBox Width="50" Text="800" />
+                                    <TextBlock Text="pixel/s" VerticalAlignment="Center" Margin="4,0,12,0" />
+                                    <TextBlock Text="加速度" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <TextBox Width="50" Text="2000" />
+                                    <TextBlock Text="pixel/s2" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                </WrapPanel>
+
+                                <WrapPanel IsEnabled="False" Margin="0,2">
+                                    <TextBlock Text="スクロール兼ページ送りの順序:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <RadioButton Content="上下優先" IsChecked="True" />
+                                    <RadioButton Content="左右優先" />
+                                    <TextBlock Text="ホイールのタメ:" VerticalAlignment="Center" Margin="12,0,4,0" />
+                                    <TextBox Width="44" Text="2" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 2: 一般設定 1 (Dialog ID: 1507)                       -->
+            <!-- ========================================================= -->
+            <TabItem Header="一般設定 1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <GroupBox Header="読み込み設定">
+                            <StackPanel>
+                                <StackPanel IsEnabled="False">
+                                    <RadioButton Content="サブフォルダがある場合確認のダイアログを表示する" IsChecked="True" />
+                                    <RadioButton Content="サブフォルダも読み込む" />
+                                    <RadioButton Content="サブフォルダは読み込まない" />
+                                    <CheckBox Content="フォルダ内書庫もサブフォルダに含める" IsChecked="True" Margin="18,2,0,2" />
+                                    <CheckBox Content="書庫内書庫もサブフォルダに含める" IsChecked="False" Margin="18,2,0,4" />
+                                </StackPanel>
+
+                                <DockPanel Margin="0,4,0,4">
+                                    <TextBlock Text="初期フォルダ" VerticalAlignment="Center" Width="78" />
+                                    <Button Content="参照..." DockPanel.Dock="Right" Width="64" Margin="6,0,0,0" Click="BrowseInitialFolder_Click" />
+                                    <TextBox x:Name="InitialFolderTextBox" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                </DockPanel>
+
+                                <CheckBox Content="画像読み込み時フォルダツリーに反映する" IsChecked="True" IsEnabled="False" />
+
+                                <WrapPanel Margin="0,4,0,4">
+                                    <RadioButton Content="しおりから開く" GroupName="StartupOpenMode" IsEnabled="False" />
+                                    <RadioButton x:Name="OpenFromStartRadio" Content="先頭から開く" GroupName="StartupOpenMode" Checked="SettingControl_Changed" />
+                                    <RadioButton Content="マーカーから開く" GroupName="StartupOpenMode" IsEnabled="False" />
+                                    <RadioButton x:Name="OpenThumbnailRadio" Content="サムネイル表示" GroupName="StartupOpenMode" Checked="SettingControl_Changed" />
+                                </WrapPanel>
+
+                                <WrapPanel IsEnabled="False" Margin="0,2,0,0">
+                                    <TextBlock Text="メニュー履歴保持数" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Width="44" Text="5" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="見開き設定">
+                            <StackPanel>
+                                <WrapPanel>
+                                    <CheckBox x:Name="AddBlankFirstPageCheck"
+                                              Content="扉絵用に先頭ページに空ページ追加"
+                                              Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                    <CheckBox Content="扉絵用に先頭ページに白紙ページ追加" IsEnabled="False" />
+                                </WrapPanel>
+                                <CheckBox Content="初回単ページの前に白紙ページ追加(先頭ページは除く)" IsEnabled="False" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="ページ送りエフェクト設定" IsEnabled="False">
+                            <StackPanel>
+                                <WrapPanel>
+                                    <RadioButton Content="めくるアニメーション" />
+                                    <RadioButton Content="同時表示" IsChecked="True" />
+                                </WrapPanel>
+                                <WrapPanel Margin="0,4,0,0">
+                                    <CheckBox Content="音を鳴らす(page.wav)" Width="160" />
+                                    <TextBlock Text="めくるスピード  遅" VerticalAlignment="Center" Margin="8,0,6,0" />
+                                    <Slider Width="180" Minimum="1" Maximum="10" Value="7" />
+                                    <TextBlock Text="速" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="フルスクリーン設定" IsEnabled="False">
+                            <WrapPanel>
+                                <CheckBox Content="解像度変更" Margin="0,0,12,0" />
+                                <ComboBox Width="180" SelectedIndex="0">
+                                    <ComboBoxItem Content="現在の解像度を維持" />
+                                </ComboBox>
+                            </WrapPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 3: 一般設定 2 (Dialog ID: 1508)                       -->
+            <!-- ========================================================= -->
+            <TabItem Header="一般設定 2">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <GroupBox Header="ルーペ設定">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,6">
+                                    <RadioButton x:Name="LoupeCircleRadio" Content="丸型ルーペ" GroupName="LoupeShape" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="LoupeSquareRadio" Content="四角型ルーペ" GroupName="LoupeShape" Checked="SettingControl_Changed" Margin="0,3,32,3" />
+                                    <CheckBox x:Name="LoupeBorderCheck" Content="ルーペ枠表示" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                </WrapPanel>
+
+                                <Grid Margin="0,2,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="68" />
+                                        <ColumnDefinition Width="125" />
+                                        <ColumnDefinition Width="52" />
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="76" />
+                                        <ColumnDefinition Width="115" />
+                                        <ColumnDefinition Width="48" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="ルーペ半径" VerticalAlignment="Center" />
+                                    <Slider x:Name="LoupeRadiusSlider" Grid.Column="1" Minimum="40" Maximum="640" TickFrequency="20" IsSnapToTickEnabled="False" VerticalAlignment="Center" ValueChanged="LoupeRadiusSlider_ValueChanged" />
+                                    <TextBox x:Name="LoupeRadiusTextBox" Grid.Column="2" Margin="4,0" VerticalContentAlignment="Center" TextChanged="LoupeRadiusTextBox_TextChanged" />
+                                    <TextBlock Grid.Column="3" Text="pixel" VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="4" Text="ルーペ拡大率" VerticalAlignment="Center" />
+                                    <Slider x:Name="LoupeScaleSlider" Grid.Column="5" Minimum="100" Maximum="800" TickFrequency="25" VerticalAlignment="Center" ValueChanged="LoupeScaleSlider_ValueChanged" />
+                                    <TextBox x:Name="LoupeScaleTextBox" Grid.Column="6" Margin="4,0" VerticalContentAlignment="Center" TextChanged="LoupeScaleTextBox_TextChanged" />
+                                    <TextBlock Grid.Column="7" Text="%" VerticalAlignment="Center" />
+                                </Grid>
+
+                                <WrapPanel>
+                                    <CheckBox Content="ルーペ使用時、メニュー、ツールバーのポップ表示抑制" IsEnabled="False" Margin="0,3,18,3" />
+                                    <CheckBox x:Name="LoupeClampCheck" Content="ルーペ範囲が画面外にでないようにする" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="別ウインドウ設定" IsEnabled="False">
+                            <StackPanel>
+                                <WrapPanel>
+                                    <RadioButton Content="操作用" IsChecked="True" />
+                                    <RadioButton Content="保存用" Margin="0,3,36,3" />
+                                    <CheckBox Content="読み込み後別ウインドウを開いて表示" />
+                                </WrapPanel>
+                                <WrapPanel Margin="0,4,0,0">
+                                    <TextBlock Text="最大別ウインドウ数" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <TextBox Width="48" Text="1" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Avisynthプラグインパス設定" IsEnabled="False">
+                            <DockPanel>
+                                <Button Content="参照..." DockPanel.Dock="Right" Width="64" Margin="6,0,0,0" />
+                                <TextBox Text="AvisynthPlugin" />
+                            </DockPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="背景設定">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,4">
+                                    <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,24,3" />
+                                    <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <Border x:Name="BgColorPreviewBorder" Width="46" Height="20" BorderBrush="#666666" BorderThickness="1" Background="#808080" Margin="0,0,8,0" />
+                                    <TextBox x:Name="BgColorHexTextBox" Width="74" VerticalContentAlignment="Center" Margin="0,0,8,0" TextChanged="BgColorHexTextBox_TextChanged" />
+                                    <Button Content="標準グレー(#808080)" Padding="6,1" Margin="0,0,4,0" Click="SetGrayBg_Click" />
+                                    <Button Content="黒(#141414)" Padding="6,1" Click="SetDarkBg_Click" />
+                                </WrapPanel>
+                                <StackPanel IsEnabled="False">
+                                    <DockPanel Margin="0,2">
+                                        <RadioButton Content="壁紙使用" Width="88" />
+                                        <TextBlock Text="壁紙ファイル場所" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <Button Content="参照..." DockPanel.Dock="Right" Width="64" Margin="6,0,0,0" />
+                                        <TextBox />
+                                    </DockPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="本棚背景設定" IsEnabled="False">
+                            <WrapPanel>
+                                <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,24,3" />
+                                <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <Border Width="46" Height="20" Background="#808080" BorderBrush="#666666" BorderThickness="1" />
+                            </WrapPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 4: その他設定 (Dialog ID: 1509)                       -->
+            <!-- ========================================================= -->
+            <TabItem Header="その他設定">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <GroupBox Header="表示関連">
+                            <StackPanel>
+                                <CheckBox x:Name="ShowScrollBarsCheck" Content="スクロールバー表示" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox x:Name="ShowSubfolderCaptionCheck" Content="サブフォルダもキャプションに表示" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox x:Name="ShowOsdTextCheck" Content="読み込み時,リサイズ時などのビューウインドウへのテキスト表示あり" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox x:Name="FullScreenHideCursorCheck" Content="フルスクリーン時、常時カーソル消去" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox x:Name="FullScreenTopMostCheck" Content="フルスクリーン時、ウインドウを最前面に配置する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox Content="フルスクリーン時、タスクバー領域を覆わない" IsEnabled="False" />
+                                <CheckBox Content="ページトラックバーをシーク時リアルタイムで画像表示する" IsEnabled="False" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="動作関連">
+                            <StackPanel>
+                                <CheckBox Content="履歴リスト有効" IsChecked="True" IsEnabled="False" />
+                                <CheckBox Content="読み込み可能ファイルがないフォルダの場合、表紙サムネイル表示" IsChecked="True" IsEnabled="False" />
+                                <CheckBox Content="URL読み込み時、URL開くダイアログを表示する" IsEnabled="False" />
+                                <CheckBox Content="ページ編集で削除指定したファイルを実際に削除する(非書庫フォルダのみ有効)" IsEnabled="False" />
+                                <CheckBox x:Name="OpenLastFileCheck" Content="起動時に最後に開かれたファイルを自動で開く" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox Content="無効パスとなるリストアイテムは確認なしに削除する" IsEnabled="False" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="システム関連">
+                            <StackPanel>
+                                <CheckBox x:Name="SaveWindowPlacementCheck" Content="終了時ウインドウ位置サイズを保存する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <CheckBox Content="複数起動を禁止する" IsEnabled="False" />
+                                <CheckBox Content="マウスメッセージをフックする" IsChecked="True" IsEnabled="False" />
+                                <CheckBox Content="カレントフォルダを監視する" IsEnabled="False" />
+                                <CheckBox Content="スクリーンセーバ及びモニタ省電力を抑制する" IsEnabled="False" />
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 5: キャッシュ設定 (Dialog ID: 1510)                   -->
+            <!-- ========================================================= -->
+            <TabItem Header="キャッシュ設定">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <GroupBox Header="全般">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,4">
+                                    <TextBlock Text="展開キャッシュ数" Width="125" VerticalAlignment="Center" />
+                                    <TextBox x:Name="MaxCachedBitmapTextBox" Width="56" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="(無圧縮ビットマップ画像データの保持数)" Foreground="#555555" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                </WrapPanel>
+                                <WrapPanel Margin="0,2,0,4" IsEnabled="False">
+                                    <TextBlock Text="ファイルキャッシュサイズ" Width="125" VerticalAlignment="Center" />
+                                    <TextBox x:Name="FileCacheSizeTextBox" Width="56" Text="512" />
+                                    <TextBlock Text="MB  (ファイルデータ、書庫の場合は展開後のデータの保持サイズ)" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </WrapPanel>
+                                <WrapPanel Margin="0,2,0,0">
+                                    <CheckBox x:Name="ResizeCacheCheck" Content="リサイズキャッシュ有効" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                    <TextBlock Text="※先読みが有効な場合先読み時点でリサイズ処理も行います" Foreground="#555555" VerticalAlignment="Center" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="先読み設定">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,6">
+                                    <TextBlock Text="先読み数(進む方向)" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox x:Name="PreloadForwardTextBox" Width="52" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="先読み数(戻る方向)" VerticalAlignment="Center" Margin="28,0,8,0" />
+                                    <TextBox x:Name="PreloadBackwardTextBox" Width="52" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                </WrapPanel>
+                                <WrapPanel IsEnabled="False" Margin="0,2,0,4">
+                                    <TextBlock Text="ファイルキャッシュ先読み割合" Width="155" VerticalAlignment="Center" />
+                                    <TextBox Width="52" Text="75" />
+                                    <TextBlock Text="%" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </WrapPanel>
+                                <WrapPanel IsEnabled="False">
+                                    <TextBlock Text="先読みスレッド優先度   低" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <Slider Width="140" Minimum="0" Maximum="4" Value="1" />
+                                    <TextBlock Text="高" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="ガーベッジコレクト設定">
+                            <StackPanel>
+                                <WrapPanel Margin="0,2,0,6">
+                                    <TextBlock Text="キャッシュ制限容量" Width="115" VerticalAlignment="Center" />
+                                    <TextBox x:Name="CacheMemoryLimitTextBox" Width="64" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
+                                    <TextBlock Text="MB" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </WrapPanel>
+                                <TextBlock Text="※不必要な保持キャッシュを削除して制限容量を超えないようにします" Foreground="#555555" FontSize="11.5" Margin="0,1" />
+                                <TextBlock Text="※0MBを設定するとメモリ管理機能は働きません" Foreground="#555555" FontSize="11.5" Margin="0,1" />
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 6: ローダ設定 (Dialog ID: 1511 - Phase 3以降で有効化) -->
+            <!-- ========================================================= -->
+            <TabItem Header="ローダ設定">
+                <StackPanel IsEnabled="False">
+                    <GroupBox Header="書庫読み込み設定(arc.dll)">
+                        <StackPanel>
+                            <CheckBox Content="ソリッド書庫をキャッシュしない      ※非チェック時は展開後逐次ファイルがキャッシュされます" />
+                            <CheckBox Content="ファイル単位一括で読み込み処理する ※ネットワーク経由でアクセスする場合、展開速度が向上します" IsChecked="True" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="JPEG読み込み設定(jpg.dll)">
+                        <StackPanel>
+                            <CheckBox Content="YCbCr形式のまま出力(RGB変換、アップサンプリング処理なし)" />
+                            <CheckBox Content="強制グレースケール変換(Y成分のみ出力)" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="PDF読み込み設定(pdf.dll)">
+                        <CheckBox Content="画像リソースのみ読み込み(ページ単位ではなく画像リソース単位)" />
+                    </GroupBox>
+
+                    <GroupBox Header="Susieプラグイン設定">
+                        <StackPanel>
+                            <RadioButton Content="Susieプラグイン無効" />
+                            <RadioButton Content="Susieプラグインを使う(標準ローダ優先)" />
+                            <RadioButton Content="Susieプラグインを使う(Susieプラグイン優先)" IsChecked="True" />
+                            <RadioButton Content="Susieプラグインのみ利用する(標準ローダを使用しない)" />
+                            <DockPanel Margin="0,6,0,4">
+                                <TextBlock Text="プラグインパス" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <Button Content="参照..." DockPanel.Dock="Right" Width="64" Margin="6,0,0,0" />
+                                <TextBox Text="SusiePlugin" />
+                            </DockPanel>
+                            <Button Content="プラグイン設定..." Width="120" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ========================================================= -->
+            <!-- タブ 7: テキスト表示設定 (Dialog ID: 2600 - 未実装グレー)  -->
+            <!-- ========================================================= -->
+            <TabItem Header="テキスト表示設定">
+                <StackPanel IsEnabled="False">
+                    <GroupBox Header="文字方向(D)">
+                        <WrapPanel>
+                            <RadioButton Content="横書き" IsChecked="True" Width="120" />
+                            <RadioButton Content="縦書き" />
+                        </WrapPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="フォント(F)">
+                        <StackPanel>
+                            <WrapPanel Margin="0,2,0,4">
+                                <TextBlock Text="文字セット(S)" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="150" SelectedIndex="0">
+                                    <ComboBoxItem Content="日本語" />
+                                </ComboBox>
+                                <RadioButton Content="固定ピッチフォント(D)" Margin="12,3,8,3" />
+                                <RadioButton Content="プロポーショナルフォント(P)" IsChecked="True" />
+                            </WrapPanel>
+                            <WrapPanel Margin="0,2,0,4">
+                                <TextBlock Text="フォント名(F)" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="220" SelectedIndex="0">
+                                    <ComboBoxItem Content="メイリオ" />
+                                </ComboBox>
+                            </WrapPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="サンプル(A)" Width="80" VerticalAlignment="Center" />
+                                <TextBox Text="abcdABCD1234１２３４あいうえお亜井宇絵尾" FontSize="14" Padding="4" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="レイアウト(L)">
+                        <StackPanel>
+                            <WrapPanel Margin="0,2">
+                                <TextBlock Text="文字高さ(H)" Width="90" VerticalAlignment="Center" />
+                                <TextBox Width="48" Text="18" />
+                                <TextBlock Text="pixel" VerticalAlignment="Center" Margin="4,0,24,0" />
+                                <TextBlock Text="文字間隔(W)" Width="80" VerticalAlignment="Center" />
+                                <TextBox Width="48" Text="0" />
+                                <TextBlock Text="%" VerticalAlignment="Center" Margin="4,0,0,0" />
+                            </WrapPanel>
+                            <WrapPanel Margin="0,2">
+                                <TextBlock Text="余白(上)(U)" Width="90" VerticalAlignment="Center" />
+                                <TextBox Width="48" Text="10" />
+                                <TextBlock Text="pixel" VerticalAlignment="Center" Margin="4,0,24,0" />
+                                <TextBlock Text="余白(下)(D)" Width="80" VerticalAlignment="Center" />
+                                <TextBox Width="48" Text="10" />
+                                <TextBlock Text="pixel" VerticalAlignment="Center" Margin="4,0,0,0" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="カラー">
+                        <WrapPanel>
+                            <TextBlock Text="文字色" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Border Width="44" Height="18" Background="Black" BorderBrush="Gray" BorderThickness="1" Margin="0,0,24,0" />
+                            <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Border Width="44" Height="18" Background="#FFFF80" BorderBrush="Gray" BorderThickness="1" />
+                        </WrapPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+        <!-- 下部 OK / キャンセル / 適用(A) ボタン -->
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0">
+            <Button Content="OK"
+                    Width="86"
+                    Height="26"
+                    Margin="0,0,8,0"
+                    IsDefault="True"
+                    Click="OkButton_Click" />
+            <Button Content="キャンセル"
+                    Width="86"
+                    Height="26"
+                    Margin="0,0,8,0"
+                    IsCancel="True"
+                    Click="CancelButton_Click" />
+            <Button x:Name="ApplyButton"
+                    Content="適用(_A)"
+                    Width="86"
+                    Height="26"
+                    IsEnabled="False"
+                    Click="ApplyButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

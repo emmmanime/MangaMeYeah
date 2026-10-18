@@ -5,367 +5,693 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="MangaMeYeah"
-        Width="960"
-        Height="720"
-        WindowStartupLocation="CenterScreen">
-    <DockPanel LastChildFill="True">
-        <!-- メインメニューバー (MangaMeeya Resource ID: 102 完全再現) -->
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="ファイル(_F)">
-                <MenuItem Header="開く(_O)..." Tag="開く" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="フォルダを開く(_D)..." Tag="フォルダを開く" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="URL開く(_H)..." Tag="URL開く" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="外部プログラムで開く(_J)" Tag="外部プログラムで開く" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="外部プログラム起動設定(_K)..." Tag="外部プログラム起動設定" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="保存(_S)..." Tag="保存" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="クイックセーブ">
-                    <MenuItem Header="クイックセーブ1" Tag="クイックセーブ1" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="クイックセーブ2" Tag="クイックセーブ2" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="クイックセーブ3" Tag="クイックセーブ3" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="クイックセーブ4" Tag="クイックセーブ4" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <MenuItem Header="クイックセーブ設定..." Tag="クイックセーブ設定" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="閉じる(_C)" Tag="閉じる" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="更新(_R)" Tag="更新" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="ページ編集(_E)">
-                    <MenuItem Header="元に戻す(_U)" Tag="元に戻す" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="やり直し(_R)" Tag="やり直し" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="範囲選択(_S)" Tag="範囲選択" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="切り取り(_T)" Tag="切り取り" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="コピー(_C)" Tag="コピー" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="貼り付け(_P)" Tag="貼り付け" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="削除(_D)" Tag="削除" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="全削除(_A)" Tag="全削除" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="白紙ページ挿入(_B)" Tag="白紙ページ挿入" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="検索(_F)..." Tag="検索" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ファイル追加(_I)..." Tag="ファイル追加" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="設定ファイルのインポート(_I)..." Tag="設定ファイルのインポート" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="設定ファイルのエクスポート(_E)..." Tag="設定ファイルのエクスポート" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="クリップボードから貼り付け(_A)" Tag="クリップボードから貼り付け" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="クリップボードへコピー(_B)" Tag="クリップボードへコピー" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="ページ設定(_U)..." Tag="ページ設定" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="印刷(_P)..." Tag="印刷" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="終了(_X)" Tag="終了" Click="ExitMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="表示(_V)">
-                <MenuItem Header="１ページ表示" Tag="１ページ表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="２ページ表示" Tag="２ページ表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="見開き方向">
-                    <MenuItem Header="左開き" Tag="左開き" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="右開き" Tag="右開き" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <MenuItem Header="原点(初期表示位置)">
-                    <MenuItem Header="見開き方向依存" Tag="見開き方向依存" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="センタリング(縦中央)" Tag="センタリング(縦中央)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="センタリング(横中央)" Tag="センタリング(横中央)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="センタリング(中心)" Tag="センタリング(中心)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="表示位置を保持" Tag="表示位置を保持" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="画像毎の表示位置を記録" Tag="画像毎の表示位置を記録" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="自動見開き表示" Tag="自動見開き表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="自動単ページ表示(左右分割)" Tag="自動単ページ表示(左右分割)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="自動単ページ表示(上下分割)" Tag="自動単ページ表示(上下分割)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="自動表示設定..." Tag="自動表示設定" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="サムネイル表示(1画面)" Tag="サムネイル表示(1画面)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="サムネイル表示(8列)" Tag="サムネイル表示(8列)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="サムネイル表示(カスタム)" Tag="サムネイル表示(カスタム)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="表紙サムネイル" Tag="表紙サムネイル" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="サムネイル設定..." Tag="サムネイル設定" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="フルスクリーン" Tag="フルスクリーン" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="ルーペ表示" Tag="ルーペ表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="ツールバー表示" Tag="ツールバー表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="フォルダツリー表示" Tag="フォルダツリー表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="ブックリスト表示" Tag="ブックリスト表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="本棚表示" Tag="本棚表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="目次表示" Tag="目次表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="フルスクリーン時設定">
-                    <MenuItem Header="各ペイン固定表示" Tag="各ペイン固定表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="各ペインポップアップ表示" Tag="各ペインポップアップ表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="各ペイン非表示" Tag="各ペイン非表示" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="ツールバー固定表示" Tag="ツールバー固定表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ツールバーポップアップ表示" Tag="ツールバーポップアップ表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ツールバー非表示" Tag="ツールバー非表示" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="メニュー固定表示" Tag="メニュー固定表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="メニューポップアップ表示" Tag="メニューポップアップ表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="メニュー非表示" Tag="メニュー非表示" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="別ウインドウ表示" Tag="別ウインドウ表示" Click="UnimplementedMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="スケールモード(_S)">
-                <MenuItem Header="縦横どちらか合わせる" Tag="縦横どちらか合わせる" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="ウインドウサイズに合わせる" Tag="ウインドウサイズに合わせる" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="原寸サイズで表示" Tag="原寸サイズで表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="画像サイズに合わせる" Tag="画像サイズに合わせる" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="縦サイズを揃える(2ページ表示用)" Tag="縦サイズを揃える(2ページ表示用)" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="指定スケール、サイズで表示" Tag="指定スケール、サイズで表示" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="倍率固定(デフォルト)" Tag="倍率固定(デフォルト)" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="縮小はするが拡大はしない" Tag="縮小はするが拡大はしない" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="拡縮処理にHALFTONEフィルタを使う(_Z)" Tag="拡縮処理にHALFTONEフィルタを使う" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理に平均画素法を使う(_X)" Tag="拡縮処理に平均画素法を使う" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理にLanczosフィルタを使う(_C)" Tag="拡縮処理にLanczosフィルタを使う" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理に３次補間(バイキュービック)を使う(_V)" Tag="拡縮処理に３次補間(バイキュービック)を使う" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理に線形補間を使う(_B)" Tag="拡縮処理に線形補間を使う" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理に平均画素法+シャープネス弱(_N)" Tag="拡縮処理に平均画素法+シャープネス弱" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="拡縮処理に平均画素法+シャープネス強(_M)" Tag="拡縮処理に平均画素法+シャープネス強" Click="UnimplementedMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="移動(_J)">
-                <MenuItem Header="次に進む" Tag="次に進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="1ページだけ進む" Tag="1ページだけ進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="10ページ進む" Tag="10ページ進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="20ページ進む" Tag="20ページ進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="50ページ進む" Tag="50ページ進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="最終ページへ" Tag="最終ページへ" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="次のサブフォルダへ" Tag="次のサブフォルダへ" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="次のフォルダ(書庫)へ" Tag="次のフォルダ(書庫)へ" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="前に戻る" Tag="前に戻る" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="1ページだけ戻す" Tag="1ページだけ戻す" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="10ページ戻る" Tag="10ページ戻る" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="20ページ戻る" Tag="20ページ戻る" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="50ページ戻る" Tag="50ページ戻る" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="最初のページへ" Tag="最初のページへ" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="前のサブフォルダへ" Tag="前のサブフォルダへ" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="前のフォルダ(書庫)へ" Tag="前のフォルダ(書庫)へ" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="上のフォルダへ(表紙サムネイル)" Tag="上のフォルダへ(表紙サムネイル)" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="指定ページへ" Tag="指定ページへ" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="ファイルビュー" Tag="ファイルビュー" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="非リピート" Tag="非リピート" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="リピート" Tag="リピート" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="フォルダ移動自動式" Tag="フォルダ移動自動式" Click="UnimplementedMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="ブックリスト(_B)">
-                <MenuItem Header="表示" Tag="表示" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="マーキング" Tag="マーキング" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="マーカーに移動" Tag="マーカーに移動" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="目次の追加/削除(_C)" Tag="目次の追加/削除" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="お気に入りに登録" Tag="お気に入りに登録" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="表紙登録..." Tag="表紙登録" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="背表紙登録..." Tag="背表紙登録" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="プレイリスト再生" Tag="プレイリスト再生" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="プレイリスト逆再生" Tag="プレイリスト逆再生" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="プレイリスト再生設定..." Tag="プレイリスト再生設定" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="リストサムネイル表示">
-                    <MenuItem Header="プレイリスト: 1画面内" Tag="プレイリスト: 1画面内" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="プレイリスト: 8列表示" Tag="プレイリスト: 8列表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="プレイリスト: カスタム" Tag="プレイリスト: カスタム" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="お気に入り: 1画面内" Tag="お気に入り: 1画面内" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="お気に入り: 8列表示" Tag="お気に入り: 8列表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="お気に入り: カスタム" Tag="お気に入り: カスタム" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="履歴: 1画面内" Tag="履歴: 1画面内" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="履歴: 8列表示" Tag="履歴: 8列表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="履歴: カスタム" Tag="履歴: カスタム" Click="UnimplementedMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="サムネイル設定..." Tag="サムネイル設定" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="履歴リスト有効" Tag="履歴リスト有効" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="プレイリスト保存..." Tag="プレイリスト保存" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="お気に入り保存..." Tag="お気に入り保存" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="履歴の保存..." Tag="履歴の保存" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="履歴クリア" Tag="履歴クリア" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="お気に入りクリア" Tag="お気に入りクリア" Click="UnimplementedMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="ツール(_T)">
-                <MenuItem Header="ファイル先読み(_A)" Tag="ファイル先読み" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="全ファイル一括ロード(_B)" Tag="全ファイル一括ロード" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="ページエフェクト有効(_V)" Tag="ページエフェクト有効" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="オーバーレイ表示(_O)" Tag="オーバーレイ表示" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="ファイルソート(_S)">
-                    <MenuItem Header="パス" Tag="パス" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス(逆順)" Tag="パス(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ファイル名" Tag="ファイル名" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ファイル名(逆順)" Tag="ファイル名(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="種類" Tag="種類" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="種類(逆順)" Tag="種類(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サイズ" Tag="サイズ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サイズ(逆順)" Tag="サイズ(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="更新日時" Tag="更新日時" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="更新日時(逆順)" Tag="更新日時(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ランダム" Tag="ランダム" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[数字順]" Tag="パス[数字順]" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[数字順]（逆順)" Tag="パス[数字順]（逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[文字順]" Tag="パス[文字順]" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[文字順]（逆順)" Tag="パス[文字順]（逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="エントリ順" Tag="エントリ順" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="エントリ(逆順)" Tag="エントリ(逆順)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[UNICODE順]" Tag="パス[UNICODE順]" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パス[UNICODE順](逆順)" Tag="パス[UNICODE順](逆順)" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <MenuItem Header="フォルダソート(_S)">
-                    <MenuItem Header="エクスプローラ名前順" Tag="エクスプローラ名前順" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="数字順" Tag="数字順" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="UNICODE順" Tag="UNICODE順" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ランダム" Tag="ランダム" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サイズ順" Tag="サイズ順" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="更新日時順" Tag="更新日時順" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="Avisynthフィルタ有効(_F)" Tag="Avisynthフィルタ有効" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="Avisynthフィルタ設定(_G)..." Tag="Avisynthフィルタ設定" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="Avisynthフィルタの先読み(_W)" Tag="Avisynthフィルタの先読み" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="Avisynthフィルタ設定をログ出力(_L)" Tag="Avisynthフィルタ設定をログ出力" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="Avisynthフィルタプロファイル(_P)">
-                    <MenuItem Header="profile" Tag="profile" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="操作設定(_M)">
-                    <MenuItem Header="キーボード(_K)..." Tag="キーボード" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="マウス(_M)..." Tag="マウス" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="パッド(_P)..." Tag="パッド" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ツールバー(_T)..." Tag="ツールバー" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="コマンド(_C)..." Tag="コマンド" Click="UnimplementedMenuItem_Click" />
-                </MenuItem>
-                <MenuItem Header="レジストリ関連設定(_R)..." Tag="レジストリ関連設定" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="環境設定(_C)..." Tag="環境設定" Click="UnimplementedMenuItem_Click" />
-            </MenuItem>
-            <MenuItem Header="ヘルプ(_H)">
-                <MenuItem Header="画像情報(_I)..." Tag="画像情報" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="キャッシュ情報(_C)..." Tag="キャッシュ情報" Click="UnimplementedMenuItem_Click" />
-                <Separator />
-                <MenuItem Header="バージョン情報(_V)..." Tag="バージョン情報" Click="VersionMenuItem_Click" />
-            </MenuItem>
-        </Menu>
+        Icon="pack://application:,,,/Assets/MangaMeYeah.ico"
+        Width="1120"
+        Height="800"
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        SizeChanged="Window_SizeChanged"
+        Closing="Window_Closing">
+    <Grid>
+        <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,22,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
+        <Grid x:Name="ViewerRootGrid"
+              Margin="0,22,0,0"
+              Background="#808080"
+              ClipToBounds="True"
+              Focusable="True"
+              MouseDown="ViewerRootGrid_MouseDown"
+              MouseMove="ViewerRootGrid_MouseMove"
+              MouseUp="ViewerRootGrid_MouseUp"
+              PreviewMouseWheel="ViewerRootGrid_PreviewMouseWheel">
 
-        <!-- メインビューア領域 (背景色 #808080 は MangaMeeya 標準背景色) -->
-        <Grid Background="#808080">
             <!-- 右クリックコンテキストメニュー (MangaMeeya Resource ID: 295 完全再現) -->
             <Grid.ContextMenu>
-                <ContextMenu>
-                <MenuItem Header="次に進む" Tag="次に進む" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="前に戻る" Tag="前に戻る" Click="UnimplementedMenuItem_Click" />
+                <ContextMenu x:Name="ViewerContextMenu">
+                <MenuItem Uid="CTX_143" Header="次に進む" Tag="次に進む" Click="MenuItem_Click" />
+                <MenuItem Uid="CTX_149" Header="前に戻る" Tag="前に戻る" Click="MenuItem_Click" />
                 <Separator />
-                <MenuItem Header="拡大" Tag="拡大" Click="UnimplementedMenuItem_Click" />
-                <MenuItem Header="縮小" Tag="縮小" Click="UnimplementedMenuItem_Click" />
+                <MenuItem Uid="CTX_167" Header="拡大" Tag="拡大" Click="MenuItem_Click" />
+                <MenuItem Uid="CTX_168" Header="縮小" Tag="縮小" Click="MenuItem_Click" />
                 <Separator />
                 <MenuItem Header="移動(_J)">
-                    <MenuItem Header="次に進む" Tag="次に進む" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="1ページだけ進む" Tag="1ページだけ進む" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="10ページ進む" Tag="10ページ進む" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="20ページ進む" Tag="20ページ進む" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="50ページ進む" Tag="50ページ進む" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="最終ページへ" Tag="最終ページへ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="次のサブフォルダへ" Tag="次のサブフォルダへ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="次のフォルダ(書庫)へ" Tag="次のフォルダ(書庫)へ" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_143" Header="次に進む" Tag="次に進む" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_144" Header="1ページだけ進む" Tag="1ページだけ進む" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_145" Header="10ページ進む" Tag="10ページ進む" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_146" Header="20ページ進む" Tag="20ページ進む" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_147" Header="50ページ進む" Tag="50ページ進む" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_148" Header="最終ページへ" Tag="最終ページへ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_190" Header="次のサブフォルダへ" Tag="次のサブフォルダへ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_188" Header="次のフォルダ(書庫)へ" Tag="次のフォルダ(書庫)へ" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="前に戻る" Tag="前に戻る" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="1ページだけ戻す" Tag="1ページだけ戻す" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="10ページ戻る" Tag="10ページ戻る" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="20ページ戻る" Tag="20ページ戻る" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="50ページ戻る" Tag="50ページ戻る" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="最初のページへ" Tag="最初のページへ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="前のサブフォルダへ" Tag="前のサブフォルダへ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="前のフォルダ(書庫)へ" Tag="前のフォルダ(書庫)へ" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_149" Header="前に戻る" Tag="前に戻る" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_150" Header="1ページだけ戻す" Tag="1ページだけ戻す" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_151" Header="10ページ戻る" Tag="10ページ戻る" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_152" Header="20ページ戻る" Tag="20ページ戻る" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_153" Header="50ページ戻る" Tag="50ページ戻る" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_154" Header="最初のページへ" Tag="最初のページへ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_191" Header="前のサブフォルダへ" Tag="前のサブフォルダへ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_189" Header="前のフォルダ(書庫)へ" Tag="前のフォルダ(書庫)へ" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="上のフォルダへ(表紙サムネイル)" Tag="上のフォルダへ(表紙サムネイル)" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_272" Header="上のフォルダへ(表紙サムネイル)" Tag="上のフォルダへ(表紙サムネイル)" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="指定ページへ" Tag="指定ページへ" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ファイルビュー" Tag="ファイルビュー" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_155" Header="指定ページへ" Tag="指定ページへ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_160" Header="ファイルビュー" Tag="ファイルビュー" Click="MenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="Avisynthフィルタプロファイル(_P)">
-                    <MenuItem Header="profile" Tag="profile" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_500" Header="profile" Tag="profile" Click="MenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="ファイル(_F)">
-                    <MenuItem Header="開く" Tag="開く" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="フォルダを開く" Tag="フォルダを開く" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40003" Header="開く" Tag="開く" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_271" Header="フォルダを開く" Tag="フォルダを開く" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="保存" Tag="保存" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="閉じる" Tag="閉じる" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="更新" Tag="更新" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_129" Header="保存" Tag="保存" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_280" Header="閉じる" Tag="閉じる" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_281" Header="更新" Tag="更新" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="設定ファイルのインポート" Tag="設定ファイルのインポート" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="設定ファイルのエクスポート" Tag="設定ファイルのエクスポート" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_218" Header="設定ファイルのインポート" Tag="設定ファイルのインポート" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_219" Header="設定ファイルのエクスポート" Tag="設定ファイルのエクスポート" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="クリップボードから貼り付け" Tag="クリップボードから貼り付け" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="クリップボードへコピー" Tag="クリップボードへコピー" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40022" Header="クリップボードから貼り付け" Tag="クリップボードから貼り付け" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40023" Header="クリップボードへコピー" Tag="クリップボードへコピー" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="ページ設定" Tag="ページ設定" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="印刷" Tag="印刷" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40047" Header="ページ設定" Tag="ページ設定" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40048" Header="印刷" Tag="印刷" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="終了" Tag="終了" Click="ExitMenuItem_Click" />
+                    <MenuItem Uid="CTX_127" Header="終了" Tag="終了" Click="ExitMenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="表示(_V)">
-                    <MenuItem Header="１ページ表示" Tag="１ページ表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="２ページ表示" Tag="２ページ表示" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40009" Header="１ページ表示" Tag="１ページ表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40010" Header="２ページ表示" Tag="２ページ表示" Click="MenuItem_Click" />
+                    <MenuItem Header="複数枚・連結表示(_M)">
+                        <MenuItem Uid="CTX_40010" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40201" Header="縦2枚表示" Tag="縦2枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40202" Header="横3枚表示" Tag="横3枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40203" Header="縦3枚表示" Tag="縦3枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40204" Header="横4枚表示" Tag="横4枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40205" Header="縦4枚表示" Tag="縦4枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40206" Header="縦横2×2枚表示 (4枚)" Tag="縦横2×2枚表示" Click="MenuItem_Click" />
+                    </MenuItem>
                     <MenuItem Header="見開き方向">
-                        <MenuItem Header="左開き" Tag="左開き" Click="UnimplementedMenuItem_Click" />
-                        <MenuItem Header="右開き" Tag="右開き" Click="UnimplementedMenuItem_Click" />
+                        <MenuItem Uid="CTX_278" Header="左開き" Tag="左開き" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_279" Header="右開き" Tag="右開き" Click="MenuItem_Click" />
                     </MenuItem>
                     <Separator />
-                    <MenuItem Header="自動見開き表示" Tag="自動見開き表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="自動単ページ表示(左右分割)" Tag="自動単ページ表示(左右分割)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="自動単ページ表示(上下分割)" Tag="自動単ページ表示(上下分割)" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_131" Header="自動見開き表示" Tag="自動見開き表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_187" Header="自動単ページ表示(左右分割)" Tag="自動単ページ表示(左右分割)" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_256" Header="自動単ページ表示(上下分割)" Tag="自動単ページ表示(上下分割)" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="サムネイル表示(1画面)" Tag="サムネイル表示(1画面)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サムネイル表示(8列)" Tag="サムネイル表示(8列)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サムネイル表示(カスタム)" Tag="サムネイル表示(カスタム)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="表紙サムネイル" Tag="表紙サムネイル" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="サムネイル設定" Tag="サムネイル設定" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40011" Header="サムネイル表示(1画面)" Tag="サムネイル表示(1画面)" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40012" Header="サムネイル表示(8列)" Tag="サムネイル表示(8列)" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_232" Header="サムネイル表示(カスタム)" Tag="サムネイル表示(カスタム)" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_250" Header="表紙サムネイル" Tag="表紙サムネイル" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_231" Header="サムネイル設定" Tag="サムネイル設定" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="フルスクリーン" Tag="フルスクリーン" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_119" Header="フルスクリーン" Tag="フルスクリーン" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="ルーペ表示" Tag="ルーペ表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ツールバー表示" Tag="ツールバー表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="フォルダツリー表示" Tag="フォルダツリー表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ブックリスト表示" Tag="ブックリスト表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="本棚表示" Tag="本棚表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="目次表示" Tag="目次表示" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_172" Header="ルーペ表示" Tag="ルーペ表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40031" Header="ツールバー表示" Tag="ツールバー表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_175" Header="フォルダツリー表示" Tag="フォルダツリー表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_195" Header="ブックリスト表示" Tag="ブックリスト表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_261" Header="本棚表示" Tag="本棚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_262" Header="目次表示" Tag="目次表示" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="別ウインドウ表示" Tag="別ウインドウ表示" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_269" Header="別ウインドウ表示" Tag="別ウインドウ表示" Click="MenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="スケールモード(_S)">
-                    <MenuItem Header="縦横どちらか合わせる" Tag="縦横どちらか合わせる" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="ウインドウサイズに合わせる" Tag="ウインドウサイズに合わせる" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="原寸サイズで表示" Tag="原寸サイズで表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="画像サイズに合わせる" Tag="画像サイズに合わせる" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="縦サイズを揃える(2ページ表示用)" Tag="縦サイズを揃える(2ページ表示用)" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="指定スケール、サイズで表示" Tag="指定スケール、サイズで表示" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="倍率固定(デフォルト)" Tag="倍率固定(デフォルト)" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40101" Header="縦横どちらか合わせる" Tag="縦横どちらか合わせる" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40102" Header="ウインドウサイズに合わせる" Tag="ウインドウサイズに合わせる" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40103" Header="原寸サイズで表示" Tag="原寸サイズで表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40104" Header="画像サイズに合わせる" Tag="画像サイズに合わせる" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40106" Header="縦サイズを揃える(2ページ表示用)" Tag="縦サイズを揃える(2ページ表示用)" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40105" Header="指定スケール、サイズで表示" Tag="指定スケール、サイズで表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40100" Header="倍率固定(デフォルト)" Tag="倍率固定(デフォルト)" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="縮小はするが拡大はしない" Tag="縮小はするが拡大はしない" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_40107" Header="縮小はするが拡大はしない" Tag="縮小はするが拡大はしない" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="拡縮処理にHALFTONEフィルタを使う(_Z)" Tag="拡縮処理にHALFTONEフィルタを使う" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理に平均画素法を使う(_X)" Tag="拡縮処理に平均画素法を使う" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理にLanczosフィルタを使う(_C)" Tag="拡縮処理にLanczosフィルタを使う" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理に３次補間(バイキュービック)を使う(_V)" Tag="拡縮処理に３次補間(バイキュービック)を使う" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理に線形補間を使う(_B)" Tag="拡縮処理に線形補間を使う" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理に平均画素法+シャープネス弱(_N)" Tag="拡縮処理に平均画素法+シャープネス弱" Click="UnimplementedMenuItem_Click" />
-                    <MenuItem Header="拡縮処理に平均画素法+シャープネス強(_M)" Tag="拡縮処理に平均画素法+シャープネス強" Click="UnimplementedMenuItem_Click" />
+                    <MenuItem Uid="CTX_350" Header="拡縮処理にHALFTONEフィルタを使う(_Z)" Tag="拡縮処理にHALFTONEフィルタを使う" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_351" Header="拡縮処理に平均画素法を使う(_X)" Tag="拡縮処理に平均画素法を使う" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_352" Header="拡縮処理にLanczosフィルタを使う(_C)" Tag="拡縮処理にLanczosフィルタを使う" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_353" Header="拡縮処理に３次補間(バイキュービック)を使う(_V)" Tag="拡縮処理に３次補間(バイキュービック)を使う" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_354" Header="拡縮処理に線形補間を使う(_B)" Tag="拡縮処理に線形補間を使う" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_355" Header="拡縮処理に平均画素法+シャープネス弱(_N)" Tag="拡縮処理に平均画素法+シャープネス弱" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_356" Header="拡縮処理に平均画素法+シャープネス強(_M)" Tag="拡縮処理に平均画素法+シャープネス強" Click="MenuItem_Click" />
                 </MenuItem>
                 </ContextMenu>
             </Grid.ContextMenu>
+
+            <!-- 初期ガイド表示 (画像未読込時) -->
+            <StackPanel x:Name="EmptyStatePanel"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        IsHitTestVisible="False">
+                <TextBlock Text="MangaMeYeah"
+                           Foreground="#D8D8D8"
+                           FontSize="28"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10" />
+                <TextBlock Text="画像ファイルまたはフォルダをここにドラッグ＆ドロップ、またはエクスプローラー右クリック「MangaMeYeahで開く」"
+                           Foreground="#CFCFCF"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,6" />
+                <TextBlock Text="左クリック: 次へ ｜ 右クリック: 前へ ｜ 右ドラッグ: マウスジェスチャ (↖↗↙↘ クイックセーブ1〜4 / → サムネイル選別) ｜ 中クリック: ルーペ"
+                           Foreground="#B8B8B8"
+                           FontSize="12"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- スクロール＆見開き表示コンテナ -->
+            <ScrollViewer x:Name="ImageScrollViewer"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Hidden"
+                          Focusable="False"
+                          PanningMode="Both">
+                <Grid x:Name="PageCanvasGrid"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左側画像スロット -->
+                    <Image x:Name="LeftPageImage"
+                           Grid.Column="0"
+                           Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           SnapsToDevicePixels="True"
+                           UseLayoutRounding="True" />
+
+                    <!-- 右側画像スロット -->
+                    <Image x:Name="RightPageImage"
+                           Grid.Column="1"
+                           Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           SnapsToDevicePixels="True"
+                           UseLayoutRounding="True" />
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ルーペ (拡大鏡) オーバーレイ -->
+            <Canvas x:Name="LoupeOverlayCanvas"
+                    Visibility="Collapsed"
+                    IsHitTestVisible="False">
+                <Border x:Name="LoupeBorder"
+                        Width="280"
+                        Height="280"
+                        BorderBrush="#00FF66"
+                        BorderThickness="2"
+                        Background="#202020"
+                        ClipToBounds="True">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.6" />
+                    </Border.Effect>
+                    <Canvas ClipToBounds="True">
+                        <Rectangle x:Name="LoupeViewportRect" Width="280" Height="280">
+                            <Rectangle.Fill>
+                                <VisualBrush x:Name="LoupeVisualBrush"
+                                             Visual="{Binding ElementName=PageCanvasGrid}"
+                                             ViewboxUnits="Absolute"
+                                             Stretch="None" />
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </Canvas>
+                </Border>
+            </Canvas>
+
+            <!-- マウスジェスチャ軌跡＆コマンド名オーバーレイ -->
+            <Canvas x:Name="GestureOverlayCanvas"
+                    Visibility="Collapsed"
+                    IsHitTestVisible="False">
+                <Polyline x:Name="GestureTrailPolyline"
+                          Stroke="#00FF66"
+                          StrokeThickness="3"
+                          StrokeLineJoin="Round"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round" />
+                <Border x:Name="GestureBadgeBorder"
+                        Canvas.Left="24"
+                        Canvas.Top="52"
+                        Background="#CC181818"
+                        BorderBrush="#00FF66"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6">
+                    <TextBlock x:Name="GestureStatusText"
+                               Foreground="#00FF66"
+                               FontSize="16"
+                               FontWeight="Bold" />
+                </Border>
+            </Canvas>
+
+            <!-- MangaMeeya風 左上ステータスメッセージ OSD -->
+            <Border x:Name="OsdStatusBorder"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Margin="16,28,0,0"
+                    Background="#BF141414"
+                    BorderBrush="#4000FF66"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="10,5"
+                    Visibility="Collapsed"
+                    IsHitTestVisible="False">
+                <TextBlock x:Name="OsdStatusText"
+                           Foreground="#00FF66"
+                           FontSize="14"
+                           FontWeight="SemiBold" />
+            </Border>
+
+            <!-- サムネイル一覧＆複数選択コレクション画面 (ライトテーブル) -->
+            <Grid x:Name="ThumbnailOverlayGrid"
+                  Background="#F21E1E1E"
+                  Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- サムネイル操作＆一括クイックセーブバー -->
+                <Border Grid.Row="0"
+                        Background="#2D2D30"
+                        BorderBrush="#444444"
+                        BorderThickness="0,0,0,1"
+                        Padding="12,8">
+                    <DockPanel LastChildFill="False">
+                        <TextBlock x:Name="ThumbSummaryText"
+                                   DockPanel.Dock="Left"
+                                   Foreground="White"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,16,0"
+                                   Text="サムネイル一覧" />
+
+                        <Button Content="全選択"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,6,0"
+                                Click="ThumbSelectAll_Click" />
+                        <Button Content="選択解除"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,16,0"
+                                Click="ThumbClearSelection_Click" />
+
+                        <TextBlock Text="一括クイックセーブ:"
+                                   DockPanel.Dock="Left"
+                                   Foreground="#CCCCCC"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0" />
+                        <Button x:Name="BatchQs1Button"
+                                Content="QS1へ保存"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,4,0"
+                                Click="BatchQuickSave1_Click" />
+                        <Button x:Name="BatchQs2Button"
+                                Content="QS2へ保存"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,4,0"
+                                Click="BatchQuickSave2_Click" />
+                        <Button x:Name="BatchQs3Button"
+                                Content="QS3へ保存"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,4,0"
+                                Click="BatchQuickSave3_Click" />
+                        <Button x:Name="BatchQs4Button"
+                                Content="QS4へ保存"
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Margin="0,0,12,0"
+                                Click="BatchQuickSave4_Click" />
+                        <Button Content="QS設定..."
+                                DockPanel.Dock="Left"
+                                Padding="8,3"
+                                Click="OpenQuickSaveSettings_Click" />
+
+                        <Button Content="閉じる (Esc)"
+                                DockPanel.Dock="Right"
+                                Padding="12,3"
+                                Click="CloseThumbnailView_Click" />
+
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,16,0">
+                            <TextBlock Text="サイズ:"
+                                       Foreground="#CCCCCC"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,6,0" />
+                            <Slider x:Name="ThumbSizeSlider"
+                                    Width="110"
+                                    Minimum="100"
+                                    Maximum="400"
+                                    Value="200"
+                                    VerticalAlignment="Center"
+                                    ValueChanged="ThumbSizeSlider_ValueChanged" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- サムネイル一覧リスト -->
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="10">
+                    <ItemsControl x:Name="ThumbnailItemsControl">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="{Binding DataContext.ThumbnailCardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Height="{Binding DataContext.ThumbnailCardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Margin="6"
+                                        CornerRadius="4"
+                                        Background="#262626"
+                                        BorderThickness="2"
+                                        MouseLeftButtonDown="ThumbnailCard_MouseLeftButtonDown">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderBrush" Value="#3E3E42" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrentPage}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#00AAFF" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#00FF66" />
+                                                    <Setter Property="Background" Value="#1E3A28" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid Margin="4">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Image Grid.Row="0"
+                                               Source="{Binding ThumbnailBitmap}"
+                                               Stretch="Uniform"
+                                               RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <CheckBox Grid.Row="0"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  HorizontalAlignment="Left"
+                                                  VerticalAlignment="Top"
+                                                  Margin="4"
+                                                  Click="ThumbnailCheckBox_Click">
+                                            <CheckBox.LayoutTransform>
+                                                <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
+                                            </CheckBox.LayoutTransform>
+                                        </CheckBox>
+                                        <TextBlock Grid.Row="1"
+                                                   Foreground="#E0E0E0"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="2,4,2,0">
+                                            <Run Text="{Binding DisplayPageNumber, Mode=OneWay}" FontWeight="Bold" Foreground="#00FF66" />
+                                            <Run Text=": " />
+                                            <Run Text="{Binding FileName, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
         </Grid>
-    </DockPanel>
+
+        <!-- メインメニューバー (最前面の上部に配置、フルスクリーン時はマウスを上端に寄せるとプルダウン表示) -->
+        <Menu x:Name="MainMenuBar"
+              VerticalAlignment="Top"
+              Height="22"
+              Panel.ZIndex="100"
+              MouseLeave="MainMenuBar_MouseLeave">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Uid="MAIN_40003" Header="開く(_O)..." Tag="開く" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_271" Header="フォルダを開く(_D)..." Tag="フォルダを開く" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_338" Header="URL開く(_H)..." Tag="URL開く" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_365" Header="外部プログラムで開く(_J)" Tag="外部プログラムで開く" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_366" Header="外部プログラム起動設定(_K)..." Tag="外部プログラム起動設定" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_129" Header="保存(_S)..." Tag="保存" Click="MenuItem_Click" />
+                <MenuItem Header="クイックセーブ">
+                    <MenuItem Uid="MAIN_40155" Header="クイックセーブ1" Tag="クイックセーブ1" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40156" Header="クイックセーブ2" Tag="クイックセーブ2" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40157" Header="クイックセーブ3" Tag="クイックセーブ3" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40158" Header="クイックセーブ4" Tag="クイックセーブ4" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Uid="MAIN_40162" Header="クイックセーブ設定..." Tag="クイックセーブ設定" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_280" Header="閉じる(_C)" Tag="閉じる" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_281" Header="更新(_R)" Tag="更新" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Header="ページ編集(_E)">
+                    <MenuItem Uid="MAIN_318" Header="元に戻す(_U)" Tag="元に戻す" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_319" Header="やり直し(_R)" Tag="やり直し" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_320" Header="範囲選択(_S)" Tag="範囲選択" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_321" Header="切り取り(_T)" Tag="切り取り" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_322" Header="コピー(_C)" Tag="コピー" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_323" Header="貼り付け(_P)" Tag="貼り付け" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_324" Header="削除(_D)" Tag="削除" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_326" Header="全削除(_A)" Tag="全削除" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_325" Header="白紙ページ挿入(_B)" Tag="白紙ページ挿入" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_373" Header="検索(_F)..." Tag="検索" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_375" Header="ファイル追加(_I)..." Tag="ファイル追加" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Uid="MAIN_218" Header="設定ファイルのインポート(_I)..." Tag="設定ファイルのインポート" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_219" Header="設定ファイルのエクスポート(_E)..." Tag="設定ファイルのエクスポート" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40022" Header="クリップボードから貼り付け(_A)" Tag="クリップボードから貼り付け" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40023" Header="クリップボードへコピー(_B)" Tag="クリップボードへコピー" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40047" Header="ページ設定(_U)..." Tag="ページ設定" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40048" Header="印刷(_P)..." Tag="印刷" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_127" Header="終了(_X)" Tag="終了" Click="ExitMenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Uid="MAIN_40009" Header="１ページ表示" Tag="１ページ表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40010" Header="２ページ表示" Tag="２ページ表示" Click="MenuItem_Click" />
+                <MenuItem Header="複数枚・連結表示(_M)">
+                    <MenuItem Uid="MAIN_40010" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40201" Header="縦2枚表示" Tag="縦2枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40202" Header="横3枚表示" Tag="横3枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40203" Header="縦3枚表示" Tag="縦3枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40204" Header="横4枚表示" Tag="横4枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40205" Header="縦4枚表示" Tag="縦4枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40206" Header="縦横2×2枚表示 (4枚)" Tag="縦横2×2枚表示" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Header="見開き方向">
+                    <MenuItem Uid="MAIN_278" Header="左開き" Tag="左開き" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_279" Header="右開き" Tag="右開き" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Header="原点(初期表示位置)">
+                    <MenuItem Uid="MAIN_312" Header="見開き方向依存" Tag="見開き方向依存" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_313" Header="センタリング(縦中央)" Tag="センタリング(縦中央)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_314" Header="センタリング(横中央)" Tag="センタリング(横中央)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_315" Header="センタリング(中心)" Tag="センタリング(中心)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_316" Header="表示位置を保持" Tag="表示位置を保持" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_342" Header="画像毎の表示位置を記録" Tag="画像毎の表示位置を記録" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Uid="MAIN_131" Header="自動見開き表示" Tag="自動見開き表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_187" Header="自動単ページ表示(左右分割)" Tag="自動単ページ表示(左右分割)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_256" Header="自動単ページ表示(上下分割)" Tag="自動単ページ表示(上下分割)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_369" Header="自動表示設定..." Tag="自動表示設定" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40011" Header="サムネイル表示(1画面)" Tag="サムネイル表示(1画面)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40012" Header="サムネイル表示(8列)" Tag="サムネイル表示(8列)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40013" Header="サムネイル表示(カスタム)" Tag="サムネイル表示(カスタム)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40014" Header="表紙サムネイル" Tag="表紙サムネイル" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_231" Header="サムネイル設定..." Tag="サムネイル設定" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_119" Header="フルスクリーン" Tag="フルスクリーン" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_172" Header="ルーペ表示" Tag="ルーペ表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40031" Header="ツールバー表示" Tag="ツールバー表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_175" Header="フォルダツリー表示" Tag="フォルダツリー表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_195" Header="ブックリスト表示" Tag="ブックリスト表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_261" Header="本棚表示" Tag="本棚表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_262" Header="目次表示" Tag="目次表示" Click="MenuItem_Click" />
+                <MenuItem Header="フルスクリーン時設定">
+                    <MenuItem Uid="MAIN_360" Header="各ペイン固定表示" Tag="各ペイン固定表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_361" Header="各ペインポップアップ表示" Tag="各ペインポップアップ表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_362" Header="各ペイン非表示" Tag="各ペイン非表示" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_377" Header="ツールバー固定表示" Tag="ツールバー固定表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_378" Header="ツールバーポップアップ表示" Tag="ツールバーポップアップ表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_379" Header="ツールバー非表示" Tag="ツールバー非表示" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_380" Header="メニュー固定表示" Tag="メニュー固定表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_381" Header="メニューポップアップ表示" Tag="メニューポップアップ表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_382" Header="メニュー非表示" Tag="メニュー非表示" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Uid="MAIN_269" Header="別ウインドウ表示" Tag="別ウインドウ表示" Click="MenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="スケールモード(_S)">
+                <MenuItem Uid="MAIN_40101" Header="縦横どちらか合わせる" Tag="縦横どちらか合わせる" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40102" Header="ウインドウサイズに合わせる" Tag="ウインドウサイズに合わせる" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40103" Header="原寸サイズで表示" Tag="原寸サイズで表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40104" Header="画像サイズに合わせる" Tag="画像サイズに合わせる" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40106" Header="縦サイズを揃える(2ページ表示用)" Tag="縦サイズを揃える(2ページ表示用)" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40105" Header="指定スケール、サイズで表示" Tag="指定スケール、サイズで表示" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40100" Header="倍率固定(デフォルト)" Tag="倍率固定(デフォルト)" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40107" Header="縮小はするが拡大はしない" Tag="縮小はするが拡大はしない" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_351" Header="拡縮処理にHALFTONEフィルタを使う(_Z)" Tag="拡縮処理にHALFTONEフィルタを使う" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_352" Header="拡縮処理に平均画素法を使う(_X)" Tag="拡縮処理に平均画素法を使う" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_353" Header="拡縮処理にLanczosフィルタを使う(_C)" Tag="拡縮処理にLanczosフィルタを使う" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_354" Header="拡縮処理に３次補間(バイキュービック)を使う(_V)" Tag="拡縮処理に３次補間(バイキュービック)を使う" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_355" Header="拡縮処理に線形補間を使う(_B)" Tag="拡縮処理に線形補間を使う" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_356" Header="拡縮処理に平均画素法+シャープネス弱(_N)" Tag="拡縮処理に平均画素法+シャープネス弱" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_357" Header="拡縮処理に平均画素法+シャープネス強(_M)" Tag="拡縮処理に平均画素法+シャープネス強" Click="MenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="移動(_J)">
+                <MenuItem Uid="MAIN_143" Header="次に進む" Tag="次に進む" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_144" Header="1ページだけ進む" Tag="1ページだけ進む" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_145" Header="10ページ進む" Tag="10ページ進む" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_146" Header="20ページ進む" Tag="20ページ進む" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_147" Header="50ページ進む" Tag="50ページ進む" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_148" Header="最終ページへ" Tag="最終ページへ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_190" Header="次のサブフォルダへ" Tag="次のサブフォルダへ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_188" Header="次のフォルダ(書庫)へ" Tag="次のフォルダ(書庫)へ" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_149" Header="前に戻る" Tag="前に戻る" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_150" Header="1ページだけ戻す" Tag="1ページだけ戻す" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_151" Header="10ページ戻る" Tag="10ページ戻る" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_152" Header="20ページ戻る" Tag="20ページ戻る" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_153" Header="50ページ戻る" Tag="50ページ戻る" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_154" Header="最初のページへ" Tag="最初のページへ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_191" Header="前のサブフォルダへ" Tag="前のサブフォルダへ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_189" Header="前のフォルダ(書庫)へ" Tag="前のフォルダ(書庫)へ" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_272" Header="上のフォルダへ(表紙サムネイル)" Tag="上のフォルダへ(表紙サムネイル)" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_155" Header="指定ページへ" Tag="指定ページへ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_160" Header="ファイルビュー" Tag="ファイルビュー" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_305" Header="非リピート" Tag="非リピート" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_306" Header="リピート" Tag="リピート" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_307" Header="フォルダ移動自動式" Tag="フォルダ移動自動式" Click="MenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="ブックリスト(_B)">
+                <MenuItem Uid="MAIN_195" Header="表示" Tag="表示" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_198" Header="マーキング" Tag="マーキング" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_202" Header="マーカーに移動" Tag="マーカーに移動" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_350" Header="目次の追加/削除(_C)" Tag="目次の追加/削除" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_200" Header="お気に入りに登録" Tag="お気に入りに登録" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_251" Header="表紙登録..." Tag="表紙登録" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_245" Header="背表紙登録..." Tag="背表紙登録" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_228" Header="プレイリスト再生" Tag="プレイリスト再生" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_230" Header="プレイリスト逆再生" Tag="プレイリスト逆再生" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_226" Header="プレイリスト再生設定..." Tag="プレイリスト再生設定" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Header="リストサムネイル表示">
+                    <MenuItem Uid="MAIN_40120" Header="プレイリスト: 1画面内" Tag="プレイリスト: 1画面内" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40121" Header="プレイリスト: 8列表示" Tag="プレイリスト: 8列表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40122" Header="プレイリスト: カスタム" Tag="プレイリスト: カスタム" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_40124" Header="お気に入り: 1画面内" Tag="お気に入り: 1画面内" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40125" Header="お気に入り: 8列表示" Tag="お気に入り: 8列表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40126" Header="お気に入り: カスタム" Tag="お気に入り: カスタム" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_40128" Header="履歴: 1画面内" Tag="履歴: 1画面内" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40129" Header="履歴: 8列表示" Tag="履歴: 8列表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40130" Header="履歴: カスタム" Tag="履歴: カスタム" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_231" Header="サムネイル設定..." Tag="サムネイル設定" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Uid="MAIN_201" Header="履歴リスト有効" Tag="履歴リスト有効" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_214" Header="プレイリスト保存..." Tag="プレイリスト保存" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_215" Header="お気に入り保存..." Tag="お気に入り保存" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_216" Header="履歴の保存..." Tag="履歴の保存" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_212" Header="履歴クリア" Tag="履歴クリア" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_213" Header="お気に入りクリア" Tag="お気に入りクリア" Click="MenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="ツール(_T)">
+                <MenuItem Uid="MAIN_40019" Header="ファイル先読み(_A)" Tag="ファイル先読み" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40020" Header="全ファイル一括ロード(_B)" Tag="全ファイル一括ロード" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_173" Header="ページエフェクト有効(_V)" Tag="ページエフェクト有効" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_0" Header="オーバーレイ表示(_O)" Tag="オーバーレイ表示" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Header="ファイルソート(_S)">
+                    <MenuItem Uid="MAIN_400" Header="パス" Tag="パス" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_401" Header="パス(逆順)" Tag="パス(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_402" Header="ファイル名" Tag="ファイル名" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_403" Header="ファイル名(逆順)" Tag="ファイル名(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_404" Header="種類" Tag="種類" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_405" Header="種類(逆順)" Tag="種類(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_406" Header="サイズ" Tag="サイズ" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_407" Header="サイズ(逆順)" Tag="サイズ(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_408" Header="更新日時" Tag="更新日時" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_409" Header="更新日時(逆順)" Tag="更新日時(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_410" Header="ランダム" Tag="ランダム" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_411" Header="パス[数字順]" Tag="パス[数字順]" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_412" Header="パス[数字順]（逆順)" Tag="パス[数字順]（逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_413" Header="パス[文字順]" Tag="パス[文字順]" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_414" Header="パス[文字順]（逆順)" Tag="パス[文字順]（逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_415" Header="エントリ順" Tag="エントリ順" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_416" Header="エントリ(逆順)" Tag="エントリ(逆順)" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_417" Header="パス[UNICODE順]" Tag="パス[UNICODE順]" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_418" Header="パス[UNICODE順](逆順)" Tag="パス[UNICODE順](逆順)" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Header="フォルダソート(_S)">
+                    <MenuItem Uid="MAIN_344" Header="エクスプローラ名前順" Tag="エクスプローラ名前順" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_345" Header="数字順" Tag="数字順" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_346" Header="UNICODE順" Tag="UNICODE順" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_347" Header="ランダム" Tag="ランダム" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_348" Header="サイズ順" Tag="サイズ順" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_349" Header="更新日時順" Tag="更新日時順" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Uid="MAIN_300" Header="Avisynthフィルタ有効(_F)" Tag="Avisynthフィルタ有効" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_301" Header="Avisynthフィルタ設定(_G)..." Tag="Avisynthフィルタ設定" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_164" Header="Avisynthフィルタの先読み(_W)" Tag="Avisynthフィルタの先読み" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_371" Header="Avisynthフィルタ設定をログ出力(_L)" Tag="Avisynthフィルタ設定をログ出力" Click="MenuItem_Click" />
+                <MenuItem Header="Avisynthフィルタプロファイル(_P)">
+                    <MenuItem Uid="MAIN_500" Header="profile" Tag="profile" Click="MenuItem_Click" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="操作設定(_M)">
+                    <MenuItem Uid="MAIN_333" Header="キーボード(_K)..." Tag="キーボード" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_334" Header="マウス(_M)..." Tag="マウス" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_335" Header="パッド(_P)..." Tag="パッド" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_336" Header="ツールバー(_T)..." Tag="ツールバー" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_337" Header="コマンド(_C)..." Tag="コマンド" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Uid="MAIN_341" Header="レジストリ関連設定(_R)..." Tag="レジストリ関連設定" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_124" Header="環境設定(_C)..." Tag="環境設定" Click="MenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Uid="MAIN_114" Header="画像情報(_I)..." Tag="画像情報" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40004" Header="キャッシュ情報(_C)..." Tag="キャッシュ情報" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_115" Header="バージョン情報(_V)..." Tag="バージョン情報" Click="VersionMenuItem_Click" />
+            </MenuItem>
+        </Menu>
+    </Grid>
 </Window>
