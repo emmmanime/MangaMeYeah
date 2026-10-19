@@ -73,7 +73,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _osdTimer;
 
     // サムネイル一覧管理
-    private readonly ObservableCollection<ThumbnailItemViewModel> _thumbnailItems = [];
+    private readonly List<ThumbnailItemViewModel> _thumbnailItems = [];
+    private readonly ObservableCollection<ThumbnailRowViewModel> _thumbnailRows = [];
     private CancellationTokenSource? _thumbLoadCts;
     private int _lastClickedThumbIndex = -1;
     private double _thumbnailCardWidth = 200;
@@ -99,7 +100,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         DataContext = this;
 
         _settings = ViewerSettings.Load();
-        ThumbnailItemsControl.ItemsSource = _thumbnailItems;
+        ThumbnailListBox.ItemsSource = _thumbnailRows;
 
         if (_settings.SaveWindowPlacementOnExit)
         {
@@ -336,7 +337,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             case PageDisplayMode.TwoPage:
             case PageDisplayMode.AutoSpread:
-                if (_forcedTwoPageIndex != startIndex && _settings.AddBlankFirstPage && startIndex == 0)
+                if (_activeConnectedOverride == null && _forcedTwoPageIndex != startIndex && _settings.AddBlankFirstPage && startIndex == 0)
                 {
                     return (1, 1, 1);
                 }
@@ -428,7 +429,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             var indices = new List<int>(count);
             for (int i = 0; i < count; i++)
             {
-                int fileIdx = _currentIndex + i;
+                int offset = (_activeConnectedOverride?.PermutedSlotIndices != null &&
+                              _activeConnectedOverride.PermutedSlotIndices.Count > i)
+                    ? _activeConnectedOverride.PermutedSlotIndices[i]
+                    : i;
+                int fileIdx = _currentIndex + offset;
                 indices.Add(fileIdx);
                 entries.Add(_cacheEngine.GetOrLoadPage(_imageFiles[fileIdx], decodeTargetW, decodeTargetH, _settings));
             }
@@ -677,7 +682,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // メニューやスペースキー等で強制的に2ページ表示が指定された場合は幅広画像でも見開き表示する
-        if (_forcedTwoPageIndex == index)
+        if (_forcedTwoPageIndex == index || _activeConnectedOverride != null)
         {
             return true;
         }
@@ -926,6 +931,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _savedWindowState = WindowState;
             _savedWindowStyle = WindowStyle;
+            ResizeMode = ResizeMode.NoResize;
             ViewerRootGrid.Margin = new Thickness(0);
             MainMenuBar.Visibility = _fullScreenMenuMode == 0 ? Visibility.Visible : Visibility.Collapsed;
             WindowStyle = WindowStyle.None;
@@ -934,6 +940,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
+            ResizeMode = ResizeMode.CanResize;
             ViewerRootGrid.Margin = new Thickness(0, 22, 0, 0);
             MainMenuBar.Visibility = Visibility.Visible;
             WindowStyle = _savedWindowStyle;
@@ -1191,34 +1198,76 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ThumbSizeSlider.Value = thumbSize;
         ApplyThumbnailCardSize(thumbSize);
 
-        _thumbnailItems.Clear();
-        for (int i = 0; i < _imageFiles.Count; i++)
+        bool needsRebuild = _thumbnailItems.Count != _imageFiles.Count;
+        if (!needsRebuild)
         {
-            var item = new ThumbnailItemViewModel
+            for (int i = 0; i < _thumbnailItems.Count; i++)
             {
-                PageIndex = i,
-                FilePath = _imageFiles[i],
-                IsCurrentPage = i == _currentIndex
-            };
-            item.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(ThumbnailItemViewModel.IsSelected))
+                if (_thumbnailItems[i].FilePath != _imageFiles[i])
                 {
-                    UpdateThumbnailSummaryText();
+                    needsRebuild = true;
+                    break;
                 }
-            };
-            _thumbnailItems.Add(item);
+            }
         }
 
+        if (needsRebuild)
+        {
+            _thumbnailItems.Clear();
+            for (int i = 0; i < _imageFiles.Count; i++)
+            {
+                var item = new ThumbnailItemViewModel
+                {
+                    PageIndex = i,
+                    FilePath = _imageFiles[i],
+                    IsCurrentPage = i == _currentIndex
+                };
+                item.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(ThumbnailItemViewModel.IsSelected))
+                    {
+                        UpdateThumbnailSummaryText();
+                    }
+                };
+                _thumbnailItems.Add(item);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < _thumbnailItems.Count; i++)
+            {
+                _thumbnailItems[i].IsCurrentPage = (i == _currentIndex);
+            }
+        }
+
+        RebuildThumbnailRows(thumbSize);
         UpdateThumbnailSummaryText();
         ThumbnailOverlayGrid.Visibility = Visibility.Visible;
 
+        // 現在表示中の画像がある行へスクロール
+        int cols = CalculateThumbnailColumns(thumbSize);
+        int targetRow = _currentIndex / cols;
+        if (targetRow >= 0 && targetRow < _thumbnailRows.Count)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                ThumbnailListBox.ScrollIntoView(_thumbnailRows[targetRow]);
+            });
+        }
+
         int decodeSize = Math.Max(240, thumbSize);
+        // 現在ページ周辺から優先してバックグラウンド生成
+        var prioritizedItems = _thumbnailItems
+            .OrderBy(item => Math.Abs(item.PageIndex - _currentIndex))
+            .ToList();
+
         Task.Run(async () =>
         {
-            foreach (var item in _thumbnailItems.ToList())
+            foreach (var item in prioritizedItems)
             {
                 if (token.IsCancellationRequested) break;
+                if (item.ThumbnailBitmap != null) continue;
+
                 var bmp = await _cacheEngine.LoadThumbnailAsync(item.FilePath, decodeSize, token);
                 if (bmp != null && !token.IsCancellationRequested)
                 {
@@ -1226,6 +1275,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 }
             }
         }, token);
+    }
+
+    private int CalculateThumbnailColumns(double cardWidth)
+    {
+        double availW = Math.Max(300, ViewerRootGrid.ActualWidth - 40);
+        int cols = (int)(availW / (cardWidth + 16));
+        return Math.Max(1, cols);
+    }
+
+    private void RebuildThumbnailRows(double cardWidth)
+    {
+        int cols = CalculateThumbnailColumns(cardWidth);
+        _thumbnailRows.Clear();
+
+        for (int i = 0; i < _thumbnailItems.Count; i += cols)
+        {
+            var row = new ThumbnailRowViewModel();
+            for (int j = i; j < i + cols && j < _thumbnailItems.Count; j++)
+            {
+                row.Items.Add(_thumbnailItems[j]);
+            }
+            _thumbnailRows.Add(row);
+        }
     }
 
     private void ApplyThumbnailCardSize(double size)
@@ -1336,6 +1408,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (IsLoaded)
         {
             ApplyThumbnailCardSize(e.NewValue);
+            if (ThumbnailOverlayGrid.Visibility == Visibility.Visible && _thumbnailItems.Count > 0)
+            {
+                RebuildThumbnailRows(e.NewValue);
+            }
         }
     }
 
@@ -1456,7 +1532,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_isLeftMouseDown && !_chordActionTriggered)
         {
             Vector delta = pos - _leftMouseDownPos;
-            if (delta.Length > 6)
+            bool isScrollable = ImageScrollViewer.ExtentWidth > ImageScrollViewer.ViewportWidth + 4 ||
+                                ImageScrollViewer.ExtentHeight > ImageScrollViewer.ViewportHeight + 4;
+            if (delta.Length > 24 && isScrollable)
             {
                 _isLeftDragging = true;
                 _longPressTimer.Stop();
@@ -1542,8 +1620,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _longPressTimer.Stop();
         _longPressTriggered = true;
 
-        if (_longPressCandidateButton == MouseButton.Left && _isLeftMouseDown && !_isLeftDragging)
+        if (_longPressCandidateButton == MouseButton.Left && _isLeftMouseDown)
         {
+            _isLeftMouseDown = false;
             Close();
         }
         else if (_longPressCandidateButton == MouseButton.Right && _isRightMouseDown && !_isRightGestureDragging)

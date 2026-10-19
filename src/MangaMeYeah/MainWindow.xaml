@@ -361,75 +361,100 @@
                     </DockPanel>
                 </Border>
 
-                <!-- サムネイル一覧リスト -->
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              Padding="10">
-                    <ItemsControl x:Name="ThumbnailItemsControl">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="{Binding DataContext.ThumbnailCardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Height="{Binding DataContext.ThumbnailCardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Margin="6"
-                                        CornerRadius="4"
-                                        Background="#262626"
-                                        BorderThickness="2"
-                                        MouseLeftButtonDown="ThumbnailCard_MouseLeftButtonDown">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="BorderBrush" Value="#3E3E42" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsCurrentPage}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="#00AAFF" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="#00FF66" />
-                                                    <Setter Property="Background" Value="#1E3A28" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Grid Margin="4">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <Image Grid.Row="0"
-                                               Source="{Binding ThumbnailBitmap}"
-                                               Stretch="Uniform"
-                                               RenderOptions.BitmapScalingMode="HighQuality" />
-                                        <CheckBox Grid.Row="0"
-                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                  HorizontalAlignment="Left"
-                                                  VerticalAlignment="Top"
-                                                  Margin="4"
-                                                  Click="ThumbnailCheckBox_Click">
-                                            <CheckBox.LayoutTransform>
-                                                <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
-                                            </CheckBox.LayoutTransform>
-                                        </CheckBox>
-                                        <TextBlock Grid.Row="1"
-                                                   Foreground="#E0E0E0"
-                                                   FontSize="11"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="2,4,2,0">
-                                            <Run Text="{Binding DisplayPageNumber, Mode=OneWay}" FontWeight="Bold" Foreground="#00FF66" />
-                                            <Run Text=": " />
-                                            <Run Text="{Binding FileName, Mode=OneWay}" />
-                                        </TextBlock>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                <!-- サムネイル一覧リスト (行単位仮想化による超高速・省メモリ表示) -->
+                <ListBox x:Name="ThumbnailListBox"
+                         Grid.Row="1"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="10"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         VirtualizingStackPanel.IsVirtualizing="True"
+                         VirtualizingStackPanel.VirtualizationMode="Recycling"
+                         VirtualizingStackPanel.ScrollUnit="Pixel">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Focusable" Value="False" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <ItemsControl ItemsSource="{Binding Items}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="{Binding DataContext.ThumbnailCardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Height="{Binding DataContext.ThumbnailCardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Margin="6"
+                                                CornerRadius="4"
+                                                Background="#262626"
+                                                BorderThickness="2"
+                                                MouseLeftButtonDown="ThumbnailCard_MouseLeftButtonDown">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="#3E3E42" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCurrentPage}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="#00AAFF" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="#00FF66" />
+                                                            <Setter Property="Background" Value="#1E3A28" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Grid Margin="4">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Image Grid.Row="0"
+                                                       Source="{Binding ThumbnailBitmap}"
+                                                       Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <CheckBox Grid.Row="0"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                          HorizontalAlignment="Left"
+                                                          VerticalAlignment="Top"
+                                                          Margin="4"
+                                                          Click="ThumbnailCheckBox_Click">
+                                                    <CheckBox.LayoutTransform>
+                                                        <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
+                                                    </CheckBox.LayoutTransform>
+                                                </CheckBox>
+                                                <TextBlock Grid.Row="1"
+                                                           Foreground="#E0E0E0"
+                                                           FontSize="11"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="2,4,2,0">
+                                                    <Run Text="{Binding DisplayPageNumber, Mode=OneWay}" FontWeight="Bold" Foreground="#00FF66" />
+                                                    <Run Text=": " />
+                                                    <Run Text="{Binding FileName, Mode=OneWay}" />
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Grid>
         </Grid>
 

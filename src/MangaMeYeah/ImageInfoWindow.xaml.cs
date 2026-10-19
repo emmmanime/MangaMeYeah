@@ -47,6 +47,32 @@ public partial class ImageInfoWindow : Window
 
         // 再帰処理で1枚ずつ配置セルへ振り分けてダイアログを構築
         PopulateSlotGridRecursive(slots, 0, InfoLayoutGrid, valueColWidth);
+
+        PreviewKeyDown += ImageInfoWindow_PreviewKeyDown;
+    }
+
+    private void ImageInfoWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Home)
+        {
+            if (System.Windows.Input.Keyboard.FocusedElement is TextBox tb)
+            {
+                tb.CaretIndex = 0;
+                tb.ScrollToHorizontalOffset(0);
+                tb.ScrollToHome();
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == System.Windows.Input.Key.End)
+        {
+            if (System.Windows.Input.Keyboard.FocusedElement is TextBox tb)
+            {
+                tb.CaretIndex = tb.Text.Length;
+                tb.ScrollToHorizontalOffset(double.MaxValue);
+                tb.ScrollToEnd();
+                e.Handled = true;
+            }
+        }
     }
 
     private static void PopulateSlotGridRecursive(
@@ -153,6 +179,7 @@ public partial class ImageInfoWindow : Window
                 Padding = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.IBeam
             };
+            labelCell.MouseLeftButtonDown += (_, _) => valueBox.Focus();
             ToolTipService.SetInitialShowDelay(valueBox, 100);
             ToolTipService.SetShowDuration(valueBox, 15000);
             valueCell.Children.Add(valueBox);

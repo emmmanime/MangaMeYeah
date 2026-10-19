@@ -10,7 +10,8 @@ public sealed record ConnectedImageGroupResult(
     int ImageCount,
     PageDisplayMode SuggestedMode,
     SpreadDirection SuggestedDirection,
-    string Description);
+    string Description,
+    IReadOnlyList<int>? PermutedSlotIndices = null);
 
 public static partial class ConnectedImageDetector
 {
@@ -37,14 +38,6 @@ public static partial class ConnectedImageDetector
         }
 
         int maxCheck = Math.Min(4, remaining);
-
-        // If startIndex is actually the continuation of an already-started explicit split group (e.g. part 2 of 4),
-        // don't re-trigger a partial detection if the previous file had the same explicit stem.
-        if (startIndex > 0 && HasExplicitSplitStemMatch(files[startIndex - 1], files[startIndex]))
-        {
-            // Only skip if startIndex - 1 and startIndex share the exact explicit split stem
-            // (unless the user navigated directly here, handled by caller)
-        }
 
         // Gather dimensions for up to 4 images
         var dims = new (int Width, int Height)[maxCheck];
@@ -96,15 +89,23 @@ public static partial class ConnectedImageDetector
             }
 
             // 1. Check 2x2 Grid when count == 4 and all 4 have matching dimensions
+            // Tests all 4! = 24 permutations to automatically restore shuffled (trick) uploads
             if (count == 4 && sameHeight && sameWidth)
             {
-                if (TryDetectGrid2x2(bitmaps, explicitStemMatch, out var gridDir))
+                if (TryDetectGrid2x2Permutations(bitmaps, explicitStemMatch, out var gridDir, out var bestPermutation))
                 {
+                    bool isNatural = bestPermutation[0] == 0 && bestPermutation[1] == 1 &&
+                                     bestPermutation[2] == 2 && bestPermutation[3] == 3;
+                    string desc = isNatural
+                        ? "縦横2×2連結画像 (4枚)"
+                        : "縦横2×2連結画像 (4枚・シャッフル配置自動復元)";
+
                     return new ConnectedImageGroupResult(
                         4,
                         PageDisplayMode.Grid2x2,
                         gridDir,
-                        "縦横2×2連結画像 (4枚)");
+                        desc,
+                        bestPermutation);
                 }
             }
 
@@ -229,13 +230,19 @@ public static partial class ConnectedImageDetector
         return true;
     }
 
+    private static readonly int[][] Permutations4 =
+    [
+        [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1], [0, 3, 1, 2], [0, 3, 2, 1],
+        [1, 0, 2, 3], [1, 0, 3, 2], [1, 2, 0, 3], [1, 2, 3, 0], [1, 3, 0, 2], [1, 3, 2, 0],
+        [2, 0, 1, 3], [2, 0, 3, 1], [2, 1, 0, 3], [2, 1, 3, 0], [2, 3, 0, 1], [2, 3, 1, 0],
+        [3, 0, 1, 2], [3, 0, 2, 1], [3, 1, 0, 2], [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]
+    ];
+
     private static bool TryDetectHorizontalChain(BitmapSource[] bitmaps, bool explicitStemMatch, out SpreadDirection direction)
     {
         direction = SpreadDirection.LeftToRight;
         int count = bitmaps.Length;
 
-        // Evaluate LTR (Right edge of [i] touches Left edge of [i+1])
-        // and RTL (Left edge of [i] touches Right edge of [i+1])
         double totalMaeLtr = 0;
         double totalMaeRtl = 0;
         double minEdgeStdDev = double.MaxValue;
@@ -261,15 +268,14 @@ public static partial class ConnectedImageDetector
         double bestMae = Math.Min(avgMaeLtr, avgMaeRtl);
         direction = avgMaeRtl < avgMaeLtr ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
 
-        // If filenames explicitly match a split pattern (e.g. img01_1, img01_2) and heights match:
-        if (explicitStemMatch && bestMae < 42.0)
+        // 誤検出防止: 同一プロンプトのAI連作（空や白背景）を弾くため閾値を厳格化
+        // 実際の分割画像は境界MAEが極小(通常<12)。色合いが似ているだけの別絵(25〜40)を確実に除外。
+        if (explicitStemMatch && bestMae < 14.0 && minEdgeStdDev > 10.0)
         {
             return true;
         }
 
-        // Otherwise require non-blank edge texture (stdDev > 14) so solid white comic borders don't false-trigger,
-        // and require high seam continuity (bestMae < 18.0)
-        return minEdgeStdDev > 14.0 && bestMae < 18.0;
+        return minEdgeStdDev > 14.0 && bestMae < 8.0;
     }
 
     private static bool TryDetectVerticalChain(BitmapSource[] bitmaps, bool explicitStemMatch, out SpreadDirection direction)
@@ -302,53 +308,87 @@ public static partial class ConnectedImageDetector
         double bestMae = Math.Min(avgTB, avgBT);
         direction = avgBT < avgTB ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
 
-        if (explicitStemMatch && bestMae < 42.0)
+        if (explicitStemMatch && bestMae < 14.0 && minEdgeStdDev > 10.0)
         {
             return true;
         }
 
-        return minEdgeStdDev > 14.0 && bestMae < 18.0;
+        return minEdgeStdDev > 14.0 && bestMae < 8.0;
     }
 
-    private static bool TryDetectGrid2x2(BitmapSource[] bitmaps, bool explicitStemMatch, out SpreadDirection direction)
+    private static bool TryDetectGrid2x2Permutations(
+        BitmapSource[] bitmaps,
+        bool explicitStemMatch,
+        out SpreadDirection direction,
+        out IReadOnlyList<int> bestPermutation)
     {
         direction = SpreadDirection.LeftToRight;
+        bestPermutation = [0, 1, 2, 3];
         if (bitmaps.Length < 4) return false;
 
-        var v0 = ExtractVerticalEdges(bitmaps[0]);
-        var v1 = ExtractVerticalEdges(bitmaps[1]);
-        var v2 = ExtractVerticalEdges(bitmaps[2]);
-        var v3 = ExtractVerticalEdges(bitmaps[3]);
-        var h0 = ExtractHorizontalEdges(bitmaps[0]);
-        var h1 = ExtractHorizontalEdges(bitmaps[1]);
-        var h2 = ExtractHorizontalEdges(bitmaps[2]);
-        var h3 = ExtractHorizontalEdges(bitmaps[3]);
+        var vEdges = new (byte[] LeftEdge, byte[] RightEdge)?[4];
+        var hEdges = new (byte[] TopEdge, byte[] BottomEdge)?[4];
 
-        if (v0 == null || v1 == null || v2 == null || v3 == null ||
-            h0 == null || h1 == null || h2 == null || h3 == null)
+        for (int i = 0; i < 4; i++)
         {
-            return false;
+            vEdges[i] = ExtractVerticalEdges(bitmaps[i]);
+            hEdges[i] = ExtractHorizontalEdges(bitmaps[i]);
+            if (vEdges[i] == null || hEdges[i] == null) return false;
         }
 
-        double horizLtr = (ComputeEdgeMae(v0.Value.RightEdge, v1.Value.LeftEdge) +
-                           ComputeEdgeMae(v2.Value.RightEdge, v3.Value.LeftEdge)) * 0.5;
-        double horizRtl = (ComputeEdgeMae(v0.Value.LeftEdge, v1.Value.RightEdge) +
-                           ComputeEdgeMae(v2.Value.LeftEdge, v3.Value.RightEdge)) * 0.5;
-        double vertMae = (ComputeEdgeMae(h0.Value.BottomEdge, h2.Value.TopEdge) +
-                          ComputeEdgeMae(h1.Value.BottomEdge, h3.Value.TopEdge)) * 0.5;
-
-        double bestHoriz = Math.Min(horizLtr, horizRtl);
-        direction = horizRtl < horizLtr ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
-
-        double combinedMae = (bestHoriz + vertMae) * 0.5;
-        double stdDev = Math.Min(ComputeEdgeStdDev(h0.Value.BottomEdge), ComputeEdgeStdDev(v0.Value.RightEdge));
-
-        if (explicitStemMatch && combinedMae < 36.0)
+        double minStdDev = double.MaxValue;
+        for (int i = 0; i < 4; i++)
         {
+            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(vEdges[i]!.Value.LeftEdge));
+            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(vEdges[i]!.Value.RightEdge));
+            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(hEdges[i]!.Value.TopEdge));
+            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(hEdges[i]!.Value.BottomEdge));
+        }
+
+        double bestMae = double.MaxValue;
+        double secondBestMae = double.MaxValue;
+        int[]? bestPerm = null;
+
+        // 全 24 通りの配置 (TL, TR, BL, BR) を探索し、十字の継ぎ目4箇所が最も連続する順列を判定
+        foreach (var p in Permutations4)
+        {
+            int tl = p[0], tr = p[1], bl = p[2], br = p[3];
+
+            double sTop = ComputeEdgeMae(vEdges[tl]!.Value.RightEdge, vEdges[tr]!.Value.LeftEdge);
+            double sBot = ComputeEdgeMae(vEdges[bl]!.Value.RightEdge, vEdges[br]!.Value.LeftEdge);
+            double sLeft = ComputeEdgeMae(hEdges[tl]!.Value.BottomEdge, hEdges[bl]!.Value.TopEdge);
+            double sRight = ComputeEdgeMae(hEdges[tr]!.Value.BottomEdge, hEdges[br]!.Value.TopEdge);
+
+            double score = (sTop + sBot + sLeft + sRight) * 0.25;
+
+            if (score < bestMae)
+            {
+                secondBestMae = bestMae;
+                bestMae = score;
+                bestPerm = p;
+            }
+            else if (score < secondBestMae)
+            {
+                secondBestMae = score;
+            }
+        }
+
+        if (bestPerm == null) return false;
+
+        bool isNaturalOrder = bestPerm[0] == 0 && bestPerm[1] == 1 && bestPerm[2] == 2 && bestPerm[3] == 3;
+
+        // 確信度判定: 正解順列は4箇所の継ぎ目が同時に合致するためMAEが突出して低くなる
+        bool passSeam = explicitStemMatch ? bestMae < 17.5 : bestMae < 12.0;
+        bool passConfidence = isNaturalOrder || (secondBestMae - bestMae >= 1.0);
+        bool passTexture = minStdDev > 10.0;
+
+        if (passSeam && passConfidence && passTexture)
+        {
+            bestPermutation = bestPerm;
             return true;
         }
 
-        return stdDev > 14.0 && combinedMae < 16.0;
+        return false;
     }
 
     private static (byte[] LeftEdge, byte[] RightEdge)? ExtractVerticalEdges(BitmapSource bmp)
