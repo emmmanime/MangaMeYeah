@@ -133,6 +133,7 @@ public class ViewerSettings
     public bool LoupeIsCircle { get; set; } = false;
     public bool LoupeShowBorder { get; set; } = true;
     public bool LoupeClampToScreen { get; set; } = true;
+    public bool SuppressPopupsDuringLoupe { get; set; } = true;
     public string BackgroundColorHex { get; set; } = "#808080";
     public string BookshelfBackgroundColorHex { get; set; } = "#808080";
 

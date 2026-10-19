@@ -25,12 +25,6 @@ public static partial class ConnectedImageDetector
         PageCacheEngine cacheEngine,
         ViewerSettings settings)
     {
-        // Requires preload enabled with at least 4 images forward as specified
-        if (!settings.PreloadEnabled || settings.PreloadForwardCount < 4)
-        {
-            return null;
-        }
-
         int remaining = files.Count - startIndex;
         if (remaining < 2)
         {
@@ -59,9 +53,9 @@ public static partial class ConnectedImageDetector
             bool explicitStemMatch = CheckAllShareExplicitSplitStem(files, startIndex, count);
             if (!explicitStemMatch)
             {
-                // Only consider non-explicit suffix if filenames share a long common stem (> 4 chars)
-                // and end in a strict consecutive numeric index
-                if (!CheckAllShareConsecutiveNumericStem(files, startIndex, count))
+                // Accept consecutive numeric index OR common prefix with length >= 2
+                if (!CheckAllShareConsecutiveNumericStem(files, startIndex, count) &&
+                    !CheckAllShareCommonPrefix(files, startIndex, count))
                 {
                     continue;
                 }
@@ -71,8 +65,8 @@ public static partial class ConnectedImageDetector
             bool sameWidth = true;
             for (int i = 1; i < count; i++)
             {
-                if (Math.Abs(dims[i].Height - dims[0].Height) > 2) sameHeight = false;
-                if (Math.Abs(dims[i].Width - dims[0].Width) > 2) sameWidth = false;
+                if (Math.Abs(dims[i].Height - dims[0].Height) > 3) sameHeight = false;
+                if (Math.Abs(dims[i].Width - dims[0].Width) > 3) sameWidth = false;
             }
 
             if (!sameHeight && !sameWidth)
@@ -247,6 +241,8 @@ public static partial class ConnectedImageDetector
         double totalMaeRtl = 0;
         double maxMaeLtr = 0;
         double maxMaeRtl = 0;
+        double minCorrLtr = 1.0;
+        double minCorrRtl = 1.0;
         double minEdgeStdDev = double.MaxValue;
 
         for (int i = 0; i < count - 1; i++)
@@ -257,6 +253,9 @@ public static partial class ConnectedImageDetector
 
             double maeLtr = ComputeEdgeMae(leftRightA.Value.RightEdge, leftRightB.Value.LeftEdge);
             double maeRtl = ComputeEdgeMae(leftRightA.Value.LeftEdge, leftRightB.Value.RightEdge);
+            double corrLtr = ComputeEdgeCorrelation(leftRightA.Value.RightEdge, leftRightB.Value.LeftEdge);
+            double corrRtl = ComputeEdgeCorrelation(leftRightA.Value.LeftEdge, leftRightB.Value.RightEdge);
+
             double stdA = Math.Max(ComputeEdgeStdDev(leftRightA.Value.RightEdge), ComputeEdgeStdDev(leftRightA.Value.LeftEdge));
             double stdB = Math.Max(ComputeEdgeStdDev(leftRightB.Value.RightEdge), ComputeEdgeStdDev(leftRightB.Value.LeftEdge));
 
@@ -264,6 +263,8 @@ public static partial class ConnectedImageDetector
             totalMaeRtl += maeRtl;
             maxMaeLtr = Math.Max(maxMaeLtr, maeLtr);
             maxMaeRtl = Math.Max(maxMaeRtl, maeRtl);
+            minCorrLtr = Math.Min(minCorrLtr, corrLtr);
+            minCorrRtl = Math.Min(minCorrRtl, corrRtl);
             minEdgeStdDev = Math.Min(minEdgeStdDev, Math.Min(stdA, stdB));
         }
 
@@ -272,14 +273,30 @@ public static partial class ConnectedImageDetector
         direction = avgMaeRtl < avgMaeLtr ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
         double bestMaxSeamMae = direction == SpreadDirection.RightToLeft ? maxMaeRtl : maxMaeLtr;
         double bestAvgMae = Math.Min(avgMaeLtr, avgMaeRtl);
+        double bestMinCorr = direction == SpreadDirection.RightToLeft ? minCorrRtl : minCorrLtr;
 
-        // 各継ぎ目すべてが閾値を満たすことを要求（一部だけ合致して他が合致しないケースを確実に除外）
-        if (explicitStemMatch && bestMaxSeamMae < 15.0 && bestAvgMae < 13.0 && minEdgeStdDev > 8.0)
+        if (explicitStemMatch)
         {
-            return true;
+            if (bestMaxSeamMae < 28.0 && bestAvgMae < 22.0)
+            {
+                if (minEdgeStdDev < 6.0 || bestMinCorr > 0.40 || bestAvgMae < 12.0)
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            if (bestMaxSeamMae < 22.0 && bestAvgMae < 17.0)
+            {
+                if ((minEdgeStdDev >= 8.0 && bestMinCorr > 0.48) || (minEdgeStdDev < 8.0 && bestAvgMae < 8.0))
+                {
+                    return true;
+                }
+            }
         }
 
-        return minEdgeStdDev > 12.0 && bestMaxSeamMae < 8.5 && bestAvgMae < 7.5;
+        return false;
     }
 
     private static bool TryDetectVerticalChain(BitmapSource[] bitmaps, bool explicitStemMatch, out SpreadDirection direction)
@@ -291,6 +308,8 @@ public static partial class ConnectedImageDetector
         double totalMaeBottomToTop = 0;
         double maxMaeTB = 0;
         double maxMaeBT = 0;
+        double minCorrTB = 1.0;
+        double minCorrBT = 1.0;
         double minEdgeStdDev = double.MaxValue;
 
         for (int i = 0; i < count - 1; i++)
@@ -301,6 +320,9 @@ public static partial class ConnectedImageDetector
 
             double maeTB = ComputeEdgeMae(edgesA.Value.BottomEdge, edgesB.Value.TopEdge);
             double maeBT = ComputeEdgeMae(edgesA.Value.TopEdge, edgesB.Value.BottomEdge);
+            double corrTB = ComputeEdgeCorrelation(edgesA.Value.BottomEdge, edgesB.Value.TopEdge);
+            double corrBT = ComputeEdgeCorrelation(edgesA.Value.TopEdge, edgesB.Value.BottomEdge);
+
             double stdA = Math.Max(ComputeEdgeStdDev(edgesA.Value.BottomEdge), ComputeEdgeStdDev(edgesA.Value.TopEdge));
             double stdB = Math.Max(ComputeEdgeStdDev(edgesB.Value.BottomEdge), ComputeEdgeStdDev(edgesB.Value.TopEdge));
 
@@ -308,6 +330,8 @@ public static partial class ConnectedImageDetector
             totalMaeBottomToTop += maeBT;
             maxMaeTB = Math.Max(maxMaeTB, maeTB);
             maxMaeBT = Math.Max(maxMaeBT, maeBT);
+            minCorrTB = Math.Min(minCorrTB, corrTB);
+            minCorrBT = Math.Min(minCorrBT, corrBT);
             minEdgeStdDev = Math.Min(minEdgeStdDev, Math.Min(stdA, stdB));
         }
 
@@ -316,13 +340,30 @@ public static partial class ConnectedImageDetector
         direction = avgBT < avgTB ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
         double bestMaxSeamMae = direction == SpreadDirection.RightToLeft ? maxMaeBT : maxMaeTB;
         double bestAvgMae = Math.Min(avgTB, avgBT);
+        double bestMinCorr = direction == SpreadDirection.RightToLeft ? minCorrBT : minCorrTB;
 
-        if (explicitStemMatch && bestMaxSeamMae < 15.0 && bestAvgMae < 13.0 && minEdgeStdDev > 8.0)
+        if (explicitStemMatch)
         {
-            return true;
+            if (bestMaxSeamMae < 28.0 && bestAvgMae < 22.0)
+            {
+                if (minEdgeStdDev < 6.0 || bestMinCorr > 0.40 || bestAvgMae < 12.0)
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            if (bestMaxSeamMae < 22.0 && bestAvgMae < 17.0)
+            {
+                if ((minEdgeStdDev >= 8.0 && bestMinCorr > 0.48) || (minEdgeStdDev < 8.0 && bestAvgMae < 8.0))
+                {
+                    return true;
+                }
+            }
         }
 
-        return minEdgeStdDev > 12.0 && bestMaxSeamMae < 8.5 && bestAvgMae < 7.5;
+        return false;
     }
 
     private static bool TryDetectGrid2x2Permutations(
@@ -376,7 +417,7 @@ public static partial class ConnectedImageDetector
         if (bestPerm == null) return false;
 
         int bTl = bestPerm[0], bTr = bestPerm[1], bBl = bestPerm[2], bBr = bestPerm[3];
-        // 外枠余白ではなく、実際の「4箇所の接合部エッジ」のテクスチャ（分散）を判定
+        // 4箇所の接合部エッジのテクスチャ（分散）を判定
         double stdSeam1 = Math.Max(ComputeEdgeStdDev(vEdges[bTl]!.Value.RightEdge), ComputeEdgeStdDev(vEdges[bTr]!.Value.LeftEdge));
         double stdSeam2 = Math.Max(ComputeEdgeStdDev(vEdges[bBl]!.Value.RightEdge), ComputeEdgeStdDev(vEdges[bBr]!.Value.LeftEdge));
         double stdSeam3 = Math.Max(ComputeEdgeStdDev(hEdges[bTl]!.Value.BottomEdge), ComputeEdgeStdDev(hEdges[bBl]!.Value.TopEdge));
@@ -386,9 +427,9 @@ public static partial class ConnectedImageDetector
         bool isNaturalOrder = bestPerm[0] == 0 && bestPerm[1] == 1 && bestPerm[2] == 2 && bestPerm[3] == 3;
 
         // 確信度判定: 正解順列は4箇所の継ぎ目が同時に合致
-        bool passSeam = explicitStemMatch ? bestMae < 17.5 : bestMae < 12.0;
+        bool passSeam = explicitStemMatch ? bestMae < 24.0 : bestMae < 18.0;
         bool passConfidence = isNaturalOrder || (secondBestMae - bestMae >= 0.8);
-        bool passTexture = minSeamStdDev > 6.0;
+        bool passTexture = minSeamStdDev > 4.0;
 
         if (passSeam && passConfidence && passTexture)
         {
@@ -512,6 +553,37 @@ public static partial class ConnectedImageDetector
             sum += Math.Abs(edgeA[i] - edgeB[i]);
         }
         return (double)sum / len;
+    }
+
+    private static double ComputeEdgeCorrelation(byte[] edgeA, byte[] edgeB)
+    {
+        int len = Math.Min(edgeA.Length, edgeB.Length);
+        if (len < 6) return 0.0;
+
+        double sumA = 0, sumB = 0;
+        for (int i = 0; i < len; i++)
+        {
+            sumA += edgeA[i];
+            sumB += edgeB[i];
+        }
+        double meanA = sumA / len;
+        double meanB = sumB / len;
+
+        double num = 0;
+        double denA = 0;
+        double denB = 0;
+        for (int i = 0; i < len; i++)
+        {
+            double diffA = edgeA[i] - meanA;
+            double diffB = edgeB[i] - meanB;
+            num += diffA * diffB;
+            denA += diffA * diffA;
+            denB += diffB * diffB;
+        }
+
+        double den = Math.Sqrt(denA * denB);
+        if (den < 1e-5) return 0.0; // Flat/constant edge
+        return num / den;
     }
 
     private static double ComputeEdgeStdDev(byte[] edge)

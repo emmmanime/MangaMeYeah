@@ -62,6 +62,7 @@ public partial class PreferencesWindow : Window
         LoupeSquareRadio.IsChecked = !_settings.LoupeIsCircle;
         LoupeBorderCheck.IsChecked = _settings.LoupeShowBorder;
         LoupeClampCheck.IsChecked = _settings.LoupeClampToScreen;
+        SuppressPopupsDuringLoupeCheck.IsChecked = _settings.SuppressPopupsDuringLoupe;
 
         _syncingLoupeControls = true;
         int radiusPx = (int)Math.Clamp(_settings.LoupeRadius, 40, 640);
@@ -141,6 +142,7 @@ public partial class PreferencesWindow : Window
         _settings.LoupeIsCircle = LoupeCircleRadio.IsChecked == true;
         _settings.LoupeShowBorder = LoupeBorderCheck.IsChecked == true;
         _settings.LoupeClampToScreen = LoupeClampCheck.IsChecked == true;
+        _settings.SuppressPopupsDuringLoupe = SuppressPopupsDuringLoupeCheck.IsChecked == true;
 
         if (int.TryParse(LoupeRadiusTextBox.Text, out int rad))
             _settings.LoupeRadius = Math.Clamp(rad, 40, 640);

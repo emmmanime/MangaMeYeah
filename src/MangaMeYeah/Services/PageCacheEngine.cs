@@ -312,11 +312,12 @@ public sealed class PageCacheEngine : IDisposable
         }
         catch
         {
+            using var fallbackStream = OpenImageStream(filePath);
             var bmp = new BitmapImage();
             bmp.BeginInit();
             bmp.CacheOption = BitmapCacheOption.OnLoad;
             bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-            bmp.UriSource = new Uri(filePath);
+            bmp.StreamSource = fallbackStream;
             if (targetMaxWidth > 0 && origW > targetMaxWidth)
             {
                 bmp.DecodePixelWidth = targetMaxWidth;

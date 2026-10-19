@@ -274,7 +274,7 @@
                                 </Grid>
 
                                 <WrapPanel>
-                                    <CheckBox Content="ルーペ使用時、メニュー、ツールバーのポップ表示抑制" IsEnabled="False" Margin="0,3,18,3" />
+                                    <CheckBox x:Name="SuppressPopupsDuringLoupeCheck" Content="ルーペ使用時、メニュー、ツールバーのポップ表示抑制" Margin="0,3,18,3" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
                                     <CheckBox x:Name="LoupeClampCheck" Content="ルーペ範囲が画面外にでないようにする" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
                                 </WrapPanel>
                             </StackPanel>

@@ -111,7 +111,12 @@
                     <MenuItem Uid="CTX_250" Header="表紙サムネイル" Tag="表紙サムネイル" Click="MenuItem_Click" />
                     <MenuItem Uid="CTX_231" Header="サムネイル設定" Tag="サムネイル設定" Click="MenuItem_Click" />
                     <Separator />
-                    <MenuItem Uid="CTX_119" Header="フルスクリーン" Tag="フルスクリーン" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_119" Header="フルスクリーン切り替え" Tag="フルスクリーン" Click="MenuItem_Click" />
+                    <MenuItem Header="フルスクリーン時メニュー">
+                        <MenuItem Uid="CTX_380" Header="固定表示" Tag="固定表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_381" Header="ポップアップ表示" Tag="ポップアップ表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_382" Header="非表示" Tag="非表示" Click="MenuItem_Click" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem Uid="CTX_172" Header="ルーペ表示" Tag="ルーペ表示" Click="MenuItem_Click" />
                     <MenuItem Uid="CTX_40031" Header="ツールバー表示" Tag="ツールバー表示" Click="MenuItem_Click" />

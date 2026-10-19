@@ -152,13 +152,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (msg == WM_GETMINMAXINFO)
         {
-            WmGetMinMaxInfo(hwnd, lParam, _isFullScreen || WindowStyle == WindowStyle.None);
-            handled = true;
+            // フルスクリーン表示時 (WindowStyle.None) のみ Windows の -8px 最大化境界枠をモニター実矩形に同期補正。
+            // 通常のウィンドウモード（タイトルバーあり）時は Aero Snap や通常最大化の座標計算を Windows ネイティブに委譲。
+            if (_isFullScreen || WindowStyle == WindowStyle.None)
+            {
+                WmGetMinMaxInfo(hwnd, lParam);
+                handled = true;
+            }
         }
         return IntPtr.Zero;
     }
 
-    private static void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam, bool isFullScreen)
+    private static void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
     {
         var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
         IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -167,11 +172,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             var monitorInfo = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
             if (GetMonitorInfo(monitor, ref monitorInfo))
             {
-                var rc = isFullScreen ? monitorInfo.rcMonitor : monitorInfo.rcWork;
-                mmi.ptMaxPosition.X = rc.Left;
-                mmi.ptMaxPosition.Y = rc.Top;
+                var rc = monitorInfo.rcMonitor;
+                // Win32 の WM_GETMINMAXINFO において、サブモニター上の ptMaxPosition は
+                // 「そのサブモニターの左上を原点(0,0)とした相対座標」を指定する必要があります。
+                // 仮想画面絶対座標 (rc.Left) を指定すると、左側モニターで二重にマイナスオフセットされ画面外へ消失します。
+                mmi.ptMaxPosition.X = rc.Left - monitorInfo.rcMonitor.Left;
+                mmi.ptMaxPosition.Y = rc.Top - monitorInfo.rcMonitor.Top;
                 mmi.ptMaxSize.X = Math.Abs(rc.Right - rc.Left);
                 mmi.ptMaxSize.Y = Math.Abs(rc.Bottom - rc.Top);
+                mmi.ptMaxTrackSize.X = mmi.ptMaxSize.X;
+                mmi.ptMaxTrackSize.Y = mmi.ptMaxSize.Y;
             }
         }
         Marshal.StructureToPtr(mmi, lParam, true);
@@ -1126,8 +1136,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (!_isFullScreen) return;
 
-        // ルーペ使用中は誤動作防止のためメニュー/ツールバーのポップアップ表示を抑止
-        if (_isLoupeActive)
+        // ルーペ使用中は誤動作防止のためメニュー/ツールバーのポップアップ表示を抑止 (環境設定連動)
+        if (_settings.SuppressPopupsDuringLoupe && _isLoupeActive)
         {
             if (MainMenuBar.Visibility == Visibility.Visible && _fullScreenMenuMode == 1)
             {
@@ -1235,7 +1245,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         LoupeOverlayCanvas.Visibility = _isLoupeActive ? Visibility.Visible : Visibility.Collapsed;
         if (_isLoupeActive)
         {
-            if (_isFullScreen && _fullScreenMenuMode == 1)
+            if (_settings.SuppressPopupsDuringLoupe && _isFullScreen && _fullScreenMenuMode == 1)
             {
                 MainMenuBar.Visibility = Visibility.Collapsed;
             }

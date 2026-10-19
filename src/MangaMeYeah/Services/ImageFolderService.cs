@@ -65,11 +65,39 @@ public static class ImageFolderService
             return [];
         }
 
-        var files = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
-            .Where(IsSupportedImageFile)
-            .ToList();
-
+        var files = new List<string>();
+        EnumerateImagesRecursive(folderPath, files);
         return SortFiles(files, sortMode);
+    }
+
+    private static void EnumerateImagesRecursive(string rootDir, List<string> accumulator)
+    {
+        try
+        {
+            foreach (string file in Directory.EnumerateFiles(rootDir))
+            {
+                if (IsSupportedImageFile(file))
+                {
+                    accumulator.Add(file);
+                }
+            }
+        }
+        catch { }
+
+        try
+        {
+            foreach (string subDir in Directory.EnumerateDirectories(rootDir))
+            {
+                string dirName = Path.GetFileName(subDir);
+                if (dirName.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) ||
+                    dirName.StartsWith('.'))
+                {
+                    continue;
+                }
+                EnumerateImagesRecursive(subDir, accumulator);
+            }
+        }
+        catch { }
     }
 
     public static List<string> SortFiles(IEnumerable<string> files, FileSortMode sortMode)
@@ -199,7 +227,7 @@ public static class ImageFolderService
                 {
                     return candidate;
                 }
-                if (Directory.Exists(candidate) && Directory.EnumerateFiles(candidate).Any(IsSupportedImageFile))
+                if (Directory.Exists(candidate) && HasAnySupportedImages(candidate))
                 {
                     return candidate;
                 }
@@ -211,6 +239,32 @@ public static class ImageFolderService
             // Ignore directory access errors
         }
         return null;
+    }
+
+    public static bool HasAnySupportedImages(string dirPath)
+    {
+        try
+        {
+            if (Directory.EnumerateFiles(dirPath).Any(IsSupportedImageFile))
+            {
+                return true;
+            }
+
+            foreach (string sub in Directory.EnumerateDirectories(dirPath))
+            {
+                string dirName = Path.GetFileName(sub);
+                if (dirName.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) || dirName.StartsWith('.'))
+                {
+                    continue;
+                }
+                if (HasAnySupportedImages(sub))
+                {
+                    return true;
+                }
+            }
+        }
+        catch { }
+        return false;
     }
 
     private static long GetFolderImmediateSizeSafe(string dirPath)
