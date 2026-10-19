@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -94,10 +95,96 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    #region Win32 P/Invoke & マルチモニター全画面境界調整 (WM_GETMINMAXINFO)
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public int dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr handle, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    private const int WM_GETMINMAXINFO = 0x0024;
+
+    private void MainWindow_SourceInitialized(object? sender, EventArgs e)
+    {
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var source = System.Windows.Interop.HwndSource.FromHwnd(handle);
+        source?.AddHook(WindowProc);
+    }
+
+    private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            WmGetMinMaxInfo(hwnd, lParam, _isFullScreen || WindowStyle == WindowStyle.None);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    private static void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam, bool isFullScreen)
+    {
+        var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+        IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor != IntPtr.Zero)
+        {
+            var monitorInfo = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
+            if (GetMonitorInfo(monitor, ref monitorInfo))
+            {
+                var rc = isFullScreen ? monitorInfo.rcMonitor : monitorInfo.rcWork;
+                mmi.ptMaxPosition.X = rc.Left;
+                mmi.ptMaxPosition.Y = rc.Top;
+                mmi.ptMaxSize.X = Math.Abs(rc.Right - rc.Left);
+                mmi.ptMaxSize.Y = Math.Abs(rc.Bottom - rc.Top);
+            }
+        }
+        Marshal.StructureToPtr(mmi, lParam, true);
+    }
+
+    #endregion
+
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
+
+        SourceInitialized += MainWindow_SourceInitialized;
 
         _settings = ViewerSettings.Load();
         ThumbnailListBox.ItemsSource = _thumbnailRows;
@@ -147,14 +234,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 OpenPath(args[1]);
             }
             else if (_settings.OpenLastFileOnStartup && !string.IsNullOrEmpty(_settings.LastOpenedPath) &&
-                     (File.Exists(_settings.LastOpenedPath) || Directory.Exists(_settings.LastOpenedPath)))
+                     (File.Exists(_settings.LastOpenedPath) || Directory.Exists(_settings.LastOpenedPath) || _settings.LastOpenedPath.Contains('|')))
             {
                 OpenPath(_settings.LastOpenedPath);
+            }
+
+            if (_settings.IsFullScreen)
+            {
+                ToggleFullScreen();
             }
         };
 
         Closed += (_, _) =>
         {
+            SaveCurrentResumeState();
+            _settings.IsFullScreen = _isFullScreen;
             _settings.Save();
             _cacheEngine.Dispose();
         };
@@ -162,12 +256,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Window_Closing(object sender, CancelEventArgs e)
     {
+        SaveCurrentResumeState();
+        _settings.IsFullScreen = _isFullScreen;
         if (_settings.SaveWindowPlacementOnExit && !_isFullScreen && WindowState == WindowState.Normal)
         {
             _settings.SavedWindowWidth = Width;
             _settings.SavedWindowHeight = Height;
             _settings.SavedWindowLeft = Left;
             _settings.SavedWindowTop = Top;
+        }
+        else if (_settings.SaveWindowPlacementOnExit && _isFullScreen)
+        {
+            if (RestoreBounds.Width >= 400 && RestoreBounds.Height >= 300)
+            {
+                _settings.SavedWindowWidth = RestoreBounds.Width;
+                _settings.SavedWindowHeight = RestoreBounds.Height;
+                _settings.SavedWindowLeft = RestoreBounds.Left;
+                _settings.SavedWindowTop = RestoreBounds.Top;
+            }
         }
     }
 
@@ -181,6 +287,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 var brush = new SolidColorBrush(bgColor);
                 brush.Freeze();
                 ViewerRootGrid.Background = brush;
+                LoupeBorder.Background = brush;
             }
         }
         catch
@@ -216,11 +323,64 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    #region ファイル・フォルダ読込と複数枚ページ表示 (1枚 / 横2 / 縦2 / 横3 / 縦3 / 横4 / 縦4 / 2×2)
+    #region ファイル・フォルダ・書庫読込と複数枚ページ表示 (1枚 / 横2 / 縦2 / 横3 / 縦3 / 横4 / 縦4 / 2×2)
+
+    private void SaveCurrentResumeState()
+    {
+        if (!string.IsNullOrEmpty(_currentFolderPath) && _imageFiles.Count > 0 && _currentIndex >= 0 && _currentIndex < _imageFiles.Count)
+        {
+            _settings.ResumePagePerLocation[_currentFolderPath] = _imageFiles[_currentIndex];
+        }
+    }
+
+    private int DetermineInitialIndex(string locationKey, bool openAtLastPage)
+    {
+        if (openAtLastPage && _imageFiles.Count > 0)
+        {
+            return _imageFiles.Count - 1;
+        }
+
+        if (_settings.ResumePagePerLocation.TryGetValue(locationKey, out string? lastFile) && !string.IsNullOrEmpty(lastFile))
+        {
+            int idx = _imageFiles.FindIndex(f =>
+                string.Equals(f, lastFile, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(GetDisplayFileName(f), GetDisplayFileName(lastFile), StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0)
+            {
+                return idx;
+            }
+        }
+
+        return 0;
+    }
 
     public void OpenPath(string path, bool openAtLastPage = false)
     {
-        if (File.Exists(path))
+        SaveCurrentResumeState();
+
+        if (path.Contains('|'))
+        {
+            var (arch, entry) = ArchiveImageService.SplitArchiveEntryPath(path);
+            if (File.Exists(arch))
+            {
+                _currentFolderPath = arch;
+                _imageFiles = ArchiveImageService.GetImagesInArchive(arch, _currentSortMode);
+                int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
+                _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(arch, openAtLastPage);
+            }
+            else
+            {
+                return;
+            }
+        }
+        else if (ArchiveImageService.IsArchiveFile(path))
+        {
+            if (!File.Exists(path)) return;
+            _currentFolderPath = path;
+            _imageFiles = ArchiveImageService.GetImagesInArchive(path, _currentSortMode);
+            _currentIndex = DetermineInitialIndex(path, openAtLastPage);
+        }
+        else if (File.Exists(path))
         {
             string? dir = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(dir)) return;
@@ -228,13 +388,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _currentFolderPath = dir;
             _imageFiles = ImageFolderService.GetImagesInFolder(dir, _currentSortMode);
             int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
-            _currentIndex = idx >= 0 ? idx : 0;
+            _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(dir, openAtLastPage);
         }
         else if (Directory.Exists(path))
         {
             _currentFolderPath = path;
             _imageFiles = ImageFolderService.GetImagesInFolder(path, _currentSortMode);
-            _currentIndex = openAtLastPage && _imageFiles.Count > 0 ? _imageFiles.Count - 1 : 0;
+            _currentIndex = DetermineInitialIndex(path, openAtLastPage);
         }
         else
         {
@@ -715,6 +875,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return Math.Max(1024, (int)(baseDim * 1.5));
     }
 
+    private static string GetDisplayFileName(string filePath)
+    {
+        if (filePath.Contains('|'))
+        {
+            var (_, entryKey) = ArchiveImageService.SplitArchiveEntryPath(filePath);
+            return Path.GetFileName(entryKey);
+        }
+        return Path.GetFileName(filePath);
+    }
+
     private void UpdateWindowTitle(IReadOnlyList<int> indices, IReadOnlyList<CachedPageEntry> entries)
     {
         string folderName = !string.IsNullOrEmpty(_currentFolderPath)
@@ -724,12 +894,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (indices.Count == 1)
         {
             var e = entries[0];
-            Title = $"MangaMeYeah - [{folderName}] ({indices[0] + 1}/{_imageFiles.Count}) {Path.GetFileName(e.FilePath)} [{e.OriginalWidth}x{e.OriginalHeight}]";
+            Title = $"MangaMeYeah - [{folderName}] ({indices[0] + 1}/{_imageFiles.Count}) {GetDisplayFileName(e.FilePath)} [{e.OriginalWidth}x{e.OriginalHeight}]";
         }
         else if (indices.Count > 1)
         {
             string rangeStr = $"{indices[0] + 1}-{indices[^1] + 1}/{_imageFiles.Count}";
-            string names = string.Join(" / ", entries.Select(e => Path.GetFileName(e.FilePath)));
+            string names = string.Join(" / ", entries.Select(e => GetDisplayFileName(e.FilePath)));
             Title = $"MangaMeYeah - [{folderName}] ({rangeStr}) {names}";
         }
     }
@@ -927,6 +1097,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void ToggleFullScreen()
     {
         _isFullScreen = !_isFullScreen;
+        _settings.IsFullScreen = _isFullScreen;
         if (_isFullScreen)
         {
             _savedWindowState = WindowState;
@@ -941,7 +1112,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         else
         {
             ResizeMode = ResizeMode.CanResize;
-            ViewerRootGrid.Margin = new Thickness(0, 22, 0, 0);
+            ViewerRootGrid.Margin = new Thickness(0, 24, 0, 0);
             MainMenuBar.Visibility = Visibility.Visible;
             WindowStyle = _savedWindowStyle;
             WindowState = _savedWindowState;
@@ -954,6 +1125,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void UpdateFullScreenMenuPopup(Point mousePosInRoot)
     {
         if (!_isFullScreen) return;
+
+        // ルーペ使用中は誤動作防止のためメニュー/ツールバーのポップアップ表示を抑止
+        if (_isLoupeActive)
+        {
+            if (MainMenuBar.Visibility == Visibility.Visible && _fullScreenMenuMode == 1)
+            {
+                MainMenuBar.Visibility = Visibility.Collapsed;
+            }
+            return;
+        }
 
         if (_fullScreenMenuMode == 0)
         {
@@ -1054,6 +1235,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         LoupeOverlayCanvas.Visibility = _isLoupeActive ? Visibility.Visible : Visibility.Collapsed;
         if (_isLoupeActive)
         {
+            if (_isFullScreen && _fullScreenMenuMode == 1)
+            {
+                MainMenuBar.Visibility = Visibility.Collapsed;
+            }
             ApplyLoupeSettings();
             UpdateLoupePosition(Mouse.GetPosition(ViewerRootGrid));
             ShowOsd($"ルーペ ON ({(int)(_settings.LoupeScale * 100)}%) - 右ボタン+ホイールで倍率変更");
@@ -1073,6 +1258,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         LoupeBorder.CornerRadius = _settings.LoupeIsCircle ? new CornerRadius(diameter / 2) : new CornerRadius(4);
         LoupeViewportRect.Width = diameter;
         LoupeViewportRect.Height = diameter;
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_settings.BackgroundColorHex) &&
+                ColorConverter.ConvertFromString(_settings.BackgroundColorHex) is Color bgColor)
+            {
+                var brush = new SolidColorBrush(bgColor);
+                brush.Freeze();
+                LoupeBorder.Background = brush;
+            }
+        }
+        catch
+        {
+            // Keep current background
+        }
     }
 
     private void UpdateLoupePosition(Point mousePosInRoot)
@@ -2307,12 +2507,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "画像ファイルを開く",
-            Filter = "対応画像ファイル|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.bmp;*.tif;*.tiff;*.avif;*.jxl;*.heic;*.cr2;*.cr3;*.nef;*.arw;*.orf;*.raf;*.rw2;*.dng|すべてのファイル (*.*)|*.*"
+            Title = "画像・書庫ファイルを開く",
+            Filter = "対応ファイル (*.jpg;*.png;*.zip;*.cbz;*.rar;*.7z...)|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.bmp;*.tif;*.tiff;*.avif;*.jxl;*.heic;*.cr2;*.cr3;*.nef;*.arw;*.orf;*.raf;*.rw2;*.dng;*.zip;*.cbz;*.rar;*.cbr;*.7z|画像ファイル|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.bmp;*.tif;*.tiff;*.avif;*.jxl;*.heic;*.cr2;*.cr3;*.nef;*.arw;*.orf;*.raf;*.rw2;*.dng|書庫ファイル (*.zip;*.cbz;*.rar;*.cbr;*.7z)|*.zip;*.cbz;*.rar;*.cbr;*.7z|すべてのファイル (*.*)|*.*"
         };
         if (!string.IsNullOrEmpty(_currentFolderPath) && Directory.Exists(_currentFolderPath))
         {
             dlg.InitialDirectory = _currentFolderPath;
+        }
+        else if (!string.IsNullOrEmpty(_currentFolderPath) && File.Exists(_currentFolderPath))
+        {
+            dlg.InitialDirectory = Path.GetDirectoryName(_currentFolderPath);
         }
         else if (!string.IsNullOrEmpty(_settings.InitialFolderPath) && Directory.Exists(_settings.InitialFolderPath))
         {

@@ -20,8 +20,16 @@ public static class ExplorerContextMenuService
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(FolderShellKey);
-            return key != null;
+            using var key = Registry.CurrentUser.OpenSubKey(FolderShellKey + @"\command");
+            if (key?.GetValue("") is string cmd)
+            {
+                string exePath = GetExecutablePath();
+                if (!string.IsNullOrEmpty(exePath) && cmd.Contains(exePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         catch
         {

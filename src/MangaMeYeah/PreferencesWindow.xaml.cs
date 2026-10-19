@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using MangaMeYeah.Models;
+using MangaMeYeah.Services;
 using Microsoft.Win32;
 
 namespace MangaMeYeah;
@@ -74,6 +75,9 @@ public partial class PreferencesWindow : Window
 
         BgColorHexTextBox.Text = string.IsNullOrWhiteSpace(_settings.BackgroundColorHex) ? "#808080" : _settings.BackgroundColorHex;
         UpdateBgColorPreview(BgColorHexTextBox.Text);
+
+        BookshelfBgColorHexTextBox.Text = string.IsNullOrWhiteSpace(_settings.BookshelfBackgroundColorHex) ? "#808080" : _settings.BookshelfBackgroundColorHex;
+        UpdateBookshelfBgColorPreview(BookshelfBgColorHexTextBox.Text);
 
         // Tab 4: その他設定
         ShowScrollBarsCheck.IsChecked = _settings.ShowScrollBars;
@@ -147,6 +151,12 @@ public partial class PreferencesWindow : Window
         if (TryParseBrush(bgHex, out _))
         {
             _settings.BackgroundColorHex = bgHex;
+        }
+
+        string bShelfHex = BookshelfBgColorHexTextBox.Text.Trim();
+        if (TryParseBrush(bShelfHex, out _))
+        {
+            _settings.BookshelfBackgroundColorHex = bShelfHex;
         }
 
         // Tab 4: その他設定
@@ -254,6 +264,62 @@ public partial class PreferencesWindow : Window
     private void SetDarkBg_Click(object sender, RoutedEventArgs e)
     {
         BgColorHexTextBox.Text = "#141414";
+    }
+
+    private void ChooseBgColor_Click(object sender, RoutedEventArgs e)
+    {
+        Color initial = Colors.Gray;
+        if (TryParseColor(BgColorHexTextBox.Text.Trim(), out var parsed)) initial = parsed;
+
+        var selected = NativeColorDialogService.PromptColor(this, initial);
+        if (selected.HasValue)
+        {
+            string hex = $"#{selected.Value.R:X2}{selected.Value.G:X2}{selected.Value.B:X2}";
+            BgColorHexTextBox.Text = hex;
+        }
+    }
+
+    private void ChooseBookshelfBgColor_Click(object sender, RoutedEventArgs e)
+    {
+        Color initial = Colors.Gray;
+        if (TryParseColor(BookshelfBgColorHexTextBox.Text.Trim(), out var parsed)) initial = parsed;
+
+        var selected = NativeColorDialogService.PromptColor(this, initial);
+        if (selected.HasValue)
+        {
+            string hex = $"#{selected.Value.R:X2}{selected.Value.G:X2}{selected.Value.B:X2}";
+            BookshelfBgColorHexTextBox.Text = hex;
+        }
+    }
+
+    private void BookshelfBgColorHexTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (BookshelfBgColorPreviewBorder == null) return;
+        UpdateBookshelfBgColorPreview(BookshelfBgColorHexTextBox.Text.Trim());
+        if (!_isInitializing) ApplyButton.IsEnabled = true;
+    }
+
+    private void UpdateBookshelfBgColorPreview(string hex)
+    {
+        if (TryParseBrush(hex, out var brush) && brush != null)
+        {
+            BookshelfBgColorPreviewBorder.Background = brush;
+        }
+    }
+
+    private static bool TryParseColor(string hex, out Color color)
+    {
+        color = Colors.Gray;
+        try
+        {
+            if (ColorConverter.ConvertFromString(hex) is Color c)
+            {
+                color = c;
+                return true;
+            }
+        }
+        catch { }
+        return false;
     }
 
     private void UpdateBgColorPreview(string hex)

@@ -45,7 +45,7 @@ public sealed class PageCacheEngine : IDisposable
 
         try
         {
-            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096);
+            using var stream = OpenImageStream(filePath);
             var info = ImageFileInfo.Load(stream);
             if (info.Frames.Count > 0)
             {
@@ -59,7 +59,7 @@ public sealed class PageCacheEngine : IDisposable
         {
             try
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var stream = OpenImageStream(filePath);
                 var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
                 if (decoder.Frames.Count > 0)
                 {
@@ -229,7 +229,7 @@ public sealed class PageCacheEngine : IDisposable
                 processSettings.UnsharpMask = new UnsharpMaskSettings(60, 0.5, 3);
             }
 
-            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+            using var stream = OpenImageStream(filePath);
             using var pipeline = MagicImageProcessor.BuildPipeline(stream, processSettings);
 
             var source = pipeline.PixelSource;
@@ -445,11 +445,20 @@ public sealed class PageCacheEngine : IDisposable
         }
     }
 
+    private static Stream OpenImageStream(string filePath)
+    {
+        if (ArchiveImageService.IsArchiveEntryPath(filePath))
+        {
+            return ArchiveImageService.OpenEntryStream(filePath);
+        }
+        return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+    }
+
     private static string BuildCacheKey(string filePath, int targetW, int targetH, InterpolationFilter filter)
     {
         int bucketW = targetW > 0 ? ((targetW + 255) / 256) * 256 : 0;
         int bucketH = targetH > 0 ? ((targetH + 255) / 256) * 256 : 0;
-        return $"{filePath}|{bucketW}x{bucketH}|{(int)filter}";
+        return $"{filePath}@@{bucketW}x{bucketH}@{(int)filter}";
     }
 
     public void Dispose()

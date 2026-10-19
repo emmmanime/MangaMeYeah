@@ -134,6 +134,7 @@ public class ViewerSettings
     public bool LoupeShowBorder { get; set; } = true;
     public bool LoupeClampToScreen { get; set; } = true;
     public string BackgroundColorHex { get; set; } = "#808080";
+    public string BookshelfBackgroundColorHex { get; set; } = "#808080";
 
     // その他設定 (Tab 4)
     public bool ShowScrollBars { get; set; } = false;
@@ -143,10 +144,14 @@ public class ViewerSettings
     public bool FullScreenTopMost { get; set; } = false;
     public bool OpenLastFileOnStartup { get; set; } = false;
     public bool SaveWindowPlacementOnExit { get; set; } = true;
+    public bool IsFullScreen { get; set; } = false;
     public double SavedWindowWidth { get; set; } = 1120;
     public double SavedWindowHeight { get; set; } = 800;
     public double? SavedWindowLeft { get; set; }
     public double? SavedWindowTop { get; set; }
+
+    // レジューム記憶: フォルダーや書庫のパス -> 最後に閲覧していたファイル名
+    public Dictionary<string, string> ResumePagePerLocation { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     // キャッシュ・先読み設定 (Tab 5: デフォルト先読み枚数は4枚以上とし自動連結画像検出に対応)
     public int MaxCachedBitmapCount { get; set; } = 32;

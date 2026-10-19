@@ -14,7 +14,14 @@ public sealed class ThumbnailItemViewModel : INotifyPropertyChanged
     public required int PageIndex { get; init; }
     public int DisplayPageNumber => PageIndex + 1;
     public required string FilePath { get; init; }
-    public string FileName => Path.GetFileName(FilePath);
+    public string FileName
+    {
+        get
+        {
+            int pipeIdx = FilePath.IndexOf('|');
+            return pipeIdx >= 0 ? Path.GetFileName(FilePath[(pipeIdx + 1)..]) : Path.GetFileName(FilePath);
+        }
+    }
 
     public BitmapSource? ThumbnailBitmap
     {

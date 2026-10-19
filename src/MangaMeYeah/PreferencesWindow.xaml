@@ -304,12 +304,13 @@
                         <GroupBox Header="背景設定">
                             <StackPanel>
                                 <WrapPanel Margin="0,2,0,4">
-                                    <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,24,3" />
-                                    <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                    <Border x:Name="BgColorPreviewBorder" Width="46" Height="20" BorderBrush="#666666" BorderThickness="1" Background="#808080" Margin="0,0,8,0" />
-                                    <TextBox x:Name="BgColorHexTextBox" Width="74" VerticalContentAlignment="Center" Margin="0,0,8,0" TextChanged="BgColorHexTextBox_TextChanged" />
-                                    <Button Content="標準グレー(#808080)" Padding="6,1" Margin="0,0,4,0" Click="SetGrayBg_Click" />
-                                    <Button Content="黒(#141414)" Padding="6,1" Click="SetDarkBg_Click" />
+                                    <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,16,3" />
+                                    <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <Border x:Name="BgColorPreviewBorder" Width="36" Height="20" BorderBrush="#666666" BorderThickness="1" Background="#808080" Margin="0,0,6,0" />
+                                    <TextBox x:Name="BgColorHexTextBox" Width="70" VerticalContentAlignment="Center" Margin="0,0,6,0" TextChanged="BgColorHexTextBox_TextChanged" />
+                                    <Button Content="色選択..." Padding="8,1" Margin="0,0,6,0" Click="ChooseBgColor_Click" />
+                                    <Button Content="標準グレー" Padding="6,1" Margin="0,0,4,0" Click="SetGrayBg_Click" />
+                                    <Button Content="黒" Padding="6,1" Click="SetDarkBg_Click" />
                                 </WrapPanel>
                                 <StackPanel IsEnabled="False">
                                     <DockPanel Margin="0,2">
@@ -322,11 +323,13 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Header="本棚背景設定" IsEnabled="False">
-                            <WrapPanel>
-                                <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,24,3" />
-                                <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <Border Width="46" Height="20" Background="#808080" BorderBrush="#666666" BorderThickness="1" />
+                        <GroupBox Header="本棚背景設定">
+                            <WrapPanel Margin="0,2,0,4">
+                                <RadioButton Content="単色背景" IsChecked="True" Margin="0,3,16,3" />
+                                <TextBlock Text="背景色" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <Border x:Name="BookshelfBgColorPreviewBorder" Width="36" Height="20" Background="#808080" BorderBrush="#666666" BorderThickness="1" Margin="0,0,6,0" />
+                                <TextBox x:Name="BookshelfBgColorHexTextBox" Width="70" VerticalContentAlignment="Center" Margin="0,0,6,0" TextChanged="BookshelfBgColorHexTextBox_TextChanged" />
+                                <Button Content="色選択..." Padding="8,1" Click="ChooseBookshelfBgColor_Click" />
                             </WrapPanel>
                         </GroupBox>
                     </StackPanel>

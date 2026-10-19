@@ -175,25 +175,31 @@ public static class ImageFolderService
                 return null;
             }
 
-            var rawSiblingDirs = Directory.EnumerateDirectories(parentDir)
+            var rawDirs = Directory.EnumerateDirectories(parentDir)
                 .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase));
+            var rawArchives = Directory.EnumerateFiles(parentDir)
+                .Where(ArchiveImageService.IsArchiveFile);
 
-            var siblingDirs = SortFolders(rawSiblingDirs, sortMode);
+            var siblingItems = SortFolders(rawDirs.Concat(rawArchives), sortMode);
 
-            int currentIndex = siblingDirs.FindIndex(d => string.Equals(
+            int currentIndex = siblingItems.FindIndex(d => string.Equals(
                 Path.GetFullPath(d).TrimEnd(Path.DirectorySeparatorChar),
                 Path.GetFullPath(currentFolderPath).TrimEnd(Path.DirectorySeparatorChar),
                 StringComparison.OrdinalIgnoreCase));
 
             if (currentIndex < 0) return null;
 
-            // Search in direction for a folder that actually contains supported images
+            // Search in direction for a folder or archive that actually contains supported images
             int step = offset >= 0 ? 1 : -1;
             int idx = currentIndex + step;
-            while (idx >= 0 && idx < siblingDirs.Count)
+            while (idx >= 0 && idx < siblingItems.Count)
             {
-                string candidate = siblingDirs[idx];
-                if (Directory.EnumerateFiles(candidate).Any(IsSupportedImageFile))
+                string candidate = siblingItems[idx];
+                if (ArchiveImageService.IsArchiveFile(candidate))
+                {
+                    return candidate;
+                }
+                if (Directory.Exists(candidate) && Directory.EnumerateFiles(candidate).Any(IsSupportedImageFile))
                 {
                     return candidate;
                 }

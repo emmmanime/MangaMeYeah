@@ -245,6 +245,8 @@ public static partial class ConnectedImageDetector
 
         double totalMaeLtr = 0;
         double totalMaeRtl = 0;
+        double maxMaeLtr = 0;
+        double maxMaeRtl = 0;
         double minEdgeStdDev = double.MaxValue;
 
         for (int i = 0; i < count - 1; i++)
@@ -260,22 +262,24 @@ public static partial class ConnectedImageDetector
 
             totalMaeLtr += maeLtr;
             totalMaeRtl += maeRtl;
+            maxMaeLtr = Math.Max(maxMaeLtr, maeLtr);
+            maxMaeRtl = Math.Max(maxMaeRtl, maeRtl);
             minEdgeStdDev = Math.Min(minEdgeStdDev, Math.Min(stdA, stdB));
         }
 
         double avgMaeLtr = totalMaeLtr / (count - 1);
         double avgMaeRtl = totalMaeRtl / (count - 1);
-        double bestMae = Math.Min(avgMaeLtr, avgMaeRtl);
         direction = avgMaeRtl < avgMaeLtr ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
+        double bestMaxSeamMae = direction == SpreadDirection.RightToLeft ? maxMaeRtl : maxMaeLtr;
+        double bestAvgMae = Math.Min(avgMaeLtr, avgMaeRtl);
 
-        // 誤検出防止: 同一プロンプトのAI連作（空や白背景）を弾くため閾値を厳格化
-        // 実際の分割画像は境界MAEが極小(通常<12)。色合いが似ているだけの別絵(25〜40)を確実に除外。
-        if (explicitStemMatch && bestMae < 14.0 && minEdgeStdDev > 10.0)
+        // 各継ぎ目すべてが閾値を満たすことを要求（一部だけ合致して他が合致しないケースを確実に除外）
+        if (explicitStemMatch && bestMaxSeamMae < 15.0 && bestAvgMae < 13.0 && minEdgeStdDev > 8.0)
         {
             return true;
         }
 
-        return minEdgeStdDev > 14.0 && bestMae < 8.0;
+        return minEdgeStdDev > 12.0 && bestMaxSeamMae < 8.5 && bestAvgMae < 7.5;
     }
 
     private static bool TryDetectVerticalChain(BitmapSource[] bitmaps, bool explicitStemMatch, out SpreadDirection direction)
@@ -285,6 +289,8 @@ public static partial class ConnectedImageDetector
 
         double totalMaeTopToBottom = 0;
         double totalMaeBottomToTop = 0;
+        double maxMaeTB = 0;
+        double maxMaeBT = 0;
         double minEdgeStdDev = double.MaxValue;
 
         for (int i = 0; i < count - 1; i++)
@@ -300,20 +306,23 @@ public static partial class ConnectedImageDetector
 
             totalMaeTopToBottom += maeTB;
             totalMaeBottomToTop += maeBT;
+            maxMaeTB = Math.Max(maxMaeTB, maeTB);
+            maxMaeBT = Math.Max(maxMaeBT, maeBT);
             minEdgeStdDev = Math.Min(minEdgeStdDev, Math.Min(stdA, stdB));
         }
 
         double avgTB = totalMaeTopToBottom / (count - 1);
         double avgBT = totalMaeBottomToTop / (count - 1);
-        double bestMae = Math.Min(avgTB, avgBT);
         direction = avgBT < avgTB ? SpreadDirection.RightToLeft : SpreadDirection.LeftToRight;
+        double bestMaxSeamMae = direction == SpreadDirection.RightToLeft ? maxMaeBT : maxMaeTB;
+        double bestAvgMae = Math.Min(avgTB, avgBT);
 
-        if (explicitStemMatch && bestMae < 14.0 && minEdgeStdDev > 10.0)
+        if (explicitStemMatch && bestMaxSeamMae < 15.0 && bestAvgMae < 13.0 && minEdgeStdDev > 8.0)
         {
             return true;
         }
 
-        return minEdgeStdDev > 14.0 && bestMae < 8.0;
+        return minEdgeStdDev > 12.0 && bestMaxSeamMae < 8.5 && bestAvgMae < 7.5;
     }
 
     private static bool TryDetectGrid2x2Permutations(
@@ -334,15 +343,6 @@ public static partial class ConnectedImageDetector
             vEdges[i] = ExtractVerticalEdges(bitmaps[i]);
             hEdges[i] = ExtractHorizontalEdges(bitmaps[i]);
             if (vEdges[i] == null || hEdges[i] == null) return false;
-        }
-
-        double minStdDev = double.MaxValue;
-        for (int i = 0; i < 4; i++)
-        {
-            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(vEdges[i]!.Value.LeftEdge));
-            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(vEdges[i]!.Value.RightEdge));
-            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(hEdges[i]!.Value.TopEdge));
-            minStdDev = Math.Min(minStdDev, ComputeEdgeStdDev(hEdges[i]!.Value.BottomEdge));
         }
 
         double bestMae = double.MaxValue;
@@ -375,12 +375,20 @@ public static partial class ConnectedImageDetector
 
         if (bestPerm == null) return false;
 
+        int bTl = bestPerm[0], bTr = bestPerm[1], bBl = bestPerm[2], bBr = bestPerm[3];
+        // 外枠余白ではなく、実際の「4箇所の接合部エッジ」のテクスチャ（分散）を判定
+        double stdSeam1 = Math.Max(ComputeEdgeStdDev(vEdges[bTl]!.Value.RightEdge), ComputeEdgeStdDev(vEdges[bTr]!.Value.LeftEdge));
+        double stdSeam2 = Math.Max(ComputeEdgeStdDev(vEdges[bBl]!.Value.RightEdge), ComputeEdgeStdDev(vEdges[bBr]!.Value.LeftEdge));
+        double stdSeam3 = Math.Max(ComputeEdgeStdDev(hEdges[bTl]!.Value.BottomEdge), ComputeEdgeStdDev(hEdges[bBl]!.Value.TopEdge));
+        double stdSeam4 = Math.Max(ComputeEdgeStdDev(hEdges[bTr]!.Value.BottomEdge), ComputeEdgeStdDev(hEdges[bBr]!.Value.TopEdge));
+        double minSeamStdDev = Math.Min(Math.Min(stdSeam1, stdSeam2), Math.Min(stdSeam3, stdSeam4));
+
         bool isNaturalOrder = bestPerm[0] == 0 && bestPerm[1] == 1 && bestPerm[2] == 2 && bestPerm[3] == 3;
 
-        // 確信度判定: 正解順列は4箇所の継ぎ目が同時に合致するためMAEが突出して低くなる
+        // 確信度判定: 正解順列は4箇所の継ぎ目が同時に合致
         bool passSeam = explicitStemMatch ? bestMae < 17.5 : bestMae < 12.0;
-        bool passConfidence = isNaturalOrder || (secondBestMae - bestMae >= 1.0);
-        bool passTexture = minStdDev > 10.0;
+        bool passConfidence = isNaturalOrder || (secondBestMae - bestMae >= 0.8);
+        bool passTexture = minSeamStdDev > 6.0;
 
         if (passSeam && passConfidence && passTexture)
         {
