@@ -53,6 +53,8 @@ public partial class PreferencesWindow : Window
         OpenFromStartRadio.IsChecked = _settings.StartupOpenMode != 3;
         OpenThumbnailRadio.IsChecked = _settings.StartupOpenMode == 3;
         AddBlankFirstPageCheck.IsChecked = _settings.AddBlankFirstPage;
+        AutoDetectConnectedCheck.IsChecked = _settings.AutoDetectConnectedImages;
+        SuppressConnectedPromptCheck.IsChecked = _settings.SuppressConnectedImagePrompt;
 
         // Tab 3: 一般設定 2
         LoupeCircleRadio.IsChecked = _settings.LoupeIsCircle;
@@ -128,6 +130,8 @@ public partial class PreferencesWindow : Window
         _settings.InitialFolderPath = InitialFolderTextBox.Text.Trim();
         _settings.StartupOpenMode = OpenThumbnailRadio.IsChecked == true ? 3 : 1;
         _settings.AddBlankFirstPage = AddBlankFirstPageCheck.IsChecked == true;
+        _settings.AutoDetectConnectedImages = AutoDetectConnectedCheck.IsChecked == true;
+        _settings.SuppressConnectedImagePrompt = SuppressConnectedPromptCheck.IsChecked == true;
 
         // Tab 3: 一般設定 2
         _settings.LoupeIsCircle = LoupeCircleRadio.IsChecked == true;

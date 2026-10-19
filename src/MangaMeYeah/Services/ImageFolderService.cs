@@ -110,17 +110,29 @@ public static class ImageFolderService
                 });
                 break;
             case FileSortMode.SizeAsc:
-                list.Sort((a, b) => GetFileLengthSafe(a).CompareTo(GetFileLengthSafe(b)));
-                break;
+            {
+                var withSize = list.Select(f => (Path: f, Size: GetFileLengthSafe(f))).ToList();
+                withSize.Sort((a, b) => a.Size.CompareTo(b.Size));
+                return withSize.Select(x => x.Path).ToList();
+            }
             case FileSortMode.SizeDesc:
-                list.Sort((a, b) => GetFileLengthSafe(b).CompareTo(GetFileLengthSafe(a)));
-                break;
+            {
+                var withSize = list.Select(f => (Path: f, Size: GetFileLengthSafe(f))).ToList();
+                withSize.Sort((a, b) => b.Size.CompareTo(a.Size));
+                return withSize.Select(x => x.Path).ToList();
+            }
             case FileSortMode.DateAsc:
-                list.Sort((a, b) => GetLastWriteTimeSafe(a).CompareTo(GetLastWriteTimeSafe(b)));
-                break;
+            {
+                var withDate = list.Select(f => (Path: f, Date: GetLastWriteTimeSafe(f))).ToList();
+                withDate.Sort((a, b) => a.Date.CompareTo(b.Date));
+                return withDate.Select(x => x.Path).ToList();
+            }
             case FileSortMode.DateDesc:
-                list.Sort((a, b) => GetLastWriteTimeSafe(b).CompareTo(GetLastWriteTimeSafe(a)));
-                break;
+            {
+                var withDate = list.Select(f => (Path: f, Date: GetLastWriteTimeSafe(f))).ToList();
+                withDate.Sort((a, b) => b.Date.CompareTo(a.Date));
+                return withDate.Select(x => x.Path).ToList();
+            }
             case FileSortMode.Random:
                 Random.Shared.Shuffle(CollectionsMarshal.AsSpan(list));
                 break;
@@ -128,7 +140,32 @@ public static class ImageFolderService
         return list;
     }
 
-    public static string? GetSiblingFolder(string currentFolderPath, int offset)
+    public static List<string> SortFolders(IEnumerable<string> folders, FolderSortMode sortMode)
+    {
+        var list = folders.ToList();
+        switch (sortMode)
+        {
+            case FolderSortMode.ExplorerName:
+            case FolderSortMode.NaturalNumber:
+                list.Sort((a, b) => NaturalStringComparer.Instance.Compare(Path.GetFileName(a), Path.GetFileName(b)));
+                break;
+            case FolderSortMode.Unicode:
+                list.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(Path.GetFileName(a), Path.GetFileName(b)));
+                break;
+            case FolderSortMode.Random:
+                Random.Shared.Shuffle(CollectionsMarshal.AsSpan(list));
+                break;
+            case FolderSortMode.Size:
+                list.Sort((a, b) => GetFolderImmediateSizeSafe(a).CompareTo(GetFolderImmediateSizeSafe(b)));
+                break;
+            case FolderSortMode.Date:
+                list.Sort((a, b) => GetDirectoryLastWriteTimeSafe(a).CompareTo(GetDirectoryLastWriteTimeSafe(b)));
+                break;
+        }
+        return list;
+    }
+
+    public static string? GetSiblingFolder(string currentFolderPath, int offset, FolderSortMode sortMode = FolderSortMode.ExplorerName)
     {
         try
         {
@@ -138,10 +175,10 @@ public static class ImageFolderService
                 return null;
             }
 
-            var siblingDirs = Directory.EnumerateDirectories(parentDir)
-                .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(d => d, NaturalStringComparer.Instance)
-                .ToList();
+            var rawSiblingDirs = Directory.EnumerateDirectories(parentDir)
+                .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase));
+
+            var siblingDirs = SortFolders(rawSiblingDirs, sortMode);
 
             int currentIndex = siblingDirs.FindIndex(d => string.Equals(
                 Path.GetFullPath(d).TrimEnd(Path.DirectorySeparatorChar),
@@ -168,6 +205,32 @@ public static class ImageFolderService
             // Ignore directory access errors
         }
         return null;
+    }
+
+    private static long GetFolderImmediateSizeSafe(string dirPath)
+    {
+        try
+        {
+            long sum = 0;
+            foreach (string f in Directory.EnumerateFiles(dirPath))
+            {
+                if (IsSupportedImageFile(f))
+                {
+                    sum += GetFileLengthSafe(f);
+                }
+            }
+            return sum;
+        }
+        catch
+        {
+            return 0L;
+        }
+    }
+
+    private static DateTime GetDirectoryLastWriteTimeSafe(string dirPath)
+    {
+        try { return Directory.GetLastWriteTimeUtc(dirPath); }
+        catch { return DateTime.MinValue; }
     }
 
     private static long GetFileLengthSafe(string path)

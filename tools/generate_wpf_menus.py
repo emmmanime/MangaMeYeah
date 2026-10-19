@@ -57,13 +57,15 @@ def render_menu_items(items, indent=12, is_context_menu=False):
                 if mid == 40010:
                     subpad = " " * (indent + 4)
                     lines.append(f'{pad}<MenuItem Header="複数枚・連結表示(_M)">')
-                    lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40010" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />')
+                    lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40200" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40201" Header="縦2枚表示" Tag="縦2枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40202" Header="横3枚表示" Tag="横3枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40203" Header="縦3枚表示" Tag="縦3枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40204" Header="横4枚表示" Tag="横4枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40205" Header="縦4枚表示" Tag="縦4枚表示" Click="MenuItem_Click" />')
                     lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40206" Header="縦横2×2枚表示 (4枚)" Tag="縦横2×2枚表示" Click="MenuItem_Click" />')
+                    lines.append(f'{subpad}<Separator />')
+                    lines.append(f'{subpad}<MenuItem Uid="{ctx_prefix}40210" Header="自動連結画像検出(_D)" Tag="自動連結画像検出" Click="MenuItem_Click" />')
                     lines.append(f'{pad}</MenuItem>')
     return lines
 
@@ -85,7 +87,6 @@ xaml_content = f"""<Window x:Class="MangaMeYeah.MainWindow"
         Drop="Window_Drop"
         DragOver="Window_DragOver"
         PreviewKeyDown="Window_PreviewKeyDown"
-        SizeChanged="Window_SizeChanged"
         Closing="Window_Closing">
     <Grid>
         <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,22,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
@@ -94,6 +95,7 @@ xaml_content = f"""<Window x:Class="MangaMeYeah.MainWindow"
               Background="#808080"
               ClipToBounds="True"
               Focusable="True"
+              SizeChanged="ViewerRootGrid_SizeChanged"
               MouseDown="ViewerRootGrid_MouseDown"
               MouseMove="ViewerRootGrid_MouseMove"
               MouseUp="ViewerRootGrid_MouseUp"

@@ -19,8 +19,8 @@ public enum PageDisplayMode
 
 public enum SpreadDirection
 {
-    RightToLeft = 0, // 右開き (マンガ標準: 右に若いページ、左に次ページ)
-    LeftToRight = 1  // 左開き (左に若いページ、右に次ページ)
+    RightToLeft = 0, // 右開き (マンガ標準: 右に若いページ、左に次ページ / 縦並び時は下から上)
+    LeftToRight = 1  // 左開き (左に若いページ、右に次ページ / 縦並び時は上から下)
 }
 
 public enum ScaleMode
@@ -36,13 +36,13 @@ public enum ScaleMode
 
 public enum InterpolationFilter
 {
-    Halftone = 351,
-    AveragePixel = 352,
-    Lanczos = 353,
-    Bicubic = 354,
-    Linear = 355,
-    AverageSharpLight = 356,
-    AverageSharpStrong = 357
+    Halftone = 350,
+    AveragePixel = 351,
+    Lanczos = 352,
+    Bicubic = 353,
+    Linear = 354,
+    AverageSharpLight = 355,
+    AverageSharpStrong = 356
 }
 
 public enum FileSortMode
@@ -59,7 +59,23 @@ public enum FileSortMode
     DateDesc = 409,
     Random = 410,
     PathNaturalAsc = 411,
-    PathNaturalDesc = 412
+    PathNaturalDesc = 412,
+    PathCharAsc = 413,
+    PathCharDesc = 414,
+    EntryAsc = 415,
+    EntryDesc = 416,
+    PathUnicodeAsc = 417,
+    PathUnicodeDesc = 418
+}
+
+public enum FolderSortMode
+{
+    ExplorerName = 344,  // エクスプローラ名前順
+    NaturalNumber = 345, // 数字順
+    Unicode = 346,       // UNICODE順
+    Random = 347,        // ランダム
+    Size = 348,          // サイズ順
+    Date = 349           // 更新日時順
 }
 
 public class QuickSaveSlot
@@ -79,11 +95,19 @@ public class ViewerSettings
     public bool ShrinkOnly { get; set; } = false;
     public InterpolationFilter Filter { get; set; } = InterpolationFilter.Lanczos;
 
-    // 操作設定 (Tab 1)
-    public int ZoomStepPercent { get; set; } = 15;
-    public double FixedZoomFactor { get; set; } = 1.0;
-    public double SpecifiedScaleFactor { get; set; } = 1.70; // MangaMeeya.ini OptionalScale=170
-    public bool ResetScaleOnSameMode { get; set; } = false;
+    // 連結画像自動検出設定 (アイデアノート準拠)
+    public bool AutoDetectConnectedImages { get; set; } = true;
+    public bool SuppressConnectedImagePrompt { get; set; } = false;
+
+    // ソート設定
+    public FileSortMode FileSort { get; set; } = FileSortMode.PathNaturalAsc;
+    public FolderSortMode FolderSort { get; set; } = FolderSortMode.ExplorerName;
+
+    // 操作設定 (Tab 1 - MangaMeeya.ini: ZoomSpeed=5, DScale=125, FilpScaleMode=1)
+    public int ZoomStepPercent { get; set; } = 5;
+    public double FixedZoomFactor { get; set; } = 1.25;      // MangaMeeya.ini DScale=125 (125%)
+    public double SpecifiedScaleFactor { get; set; } = 1.70; // MangaMeeya.ini OptionalScale=170 (170%)
+    public bool ResetScaleOnSameMode { get; set; } = true;   // MangaMeeya.ini FilpScaleMode=1
 
     public int StepNextPrevCount { get; set; } = 1;
     public int PageUpDownCount { get; set; } = 10;
@@ -124,13 +148,13 @@ public class ViewerSettings
     public double? SavedWindowLeft { get; set; }
     public double? SavedWindowTop { get; set; }
 
-    // キャッシュ・先読み設定 (Tab 5)
+    // キャッシュ・先読み設定 (Tab 5: デフォルト先読み枚数は4枚以上とし自動連結画像検出に対応)
     public int MaxCachedBitmapCount { get; set; } = 32;
     public int FileCacheSizeMb { get; set; } = 512;
     public bool ResizeCacheEnabled { get; set; } = true;
     public bool PreloadEnabled { get; set; } = true;
-    public int PreloadForwardCount { get; set; } = 6;
-    public int PreloadBackwardCount { get; set; } = 6;
+    public int PreloadForwardCount { get; set; } = 4;
+    public int PreloadBackwardCount { get; set; } = 4;
     public int CacheMemoryLimitMb { get; set; } = 2048;
 
     // サムネイル設定
@@ -240,6 +264,25 @@ public class ViewerSettings
                     else if (line.StartsWith("Option="))
                     {
                         target.PrependFolderName = line["Option=".Length..].Trim() == "1";
+                    }
+                }
+                else
+                {
+                    if (line.StartsWith("DScale=") && int.TryParse(line["DScale=".Length..].Trim(), out int dscale))
+                    {
+                        FixedZoomFactor = Math.Clamp(dscale / 100.0, 0.1, 8.0);
+                    }
+                    else if (line.StartsWith("OptionalScale=") && int.TryParse(line["OptionalScale=".Length..].Trim(), out int optScale))
+                    {
+                        SpecifiedScaleFactor = Math.Clamp(optScale / 100.0, 0.1, 8.0);
+                    }
+                    else if (line.StartsWith("ZoomSpeed=") && int.TryParse(line["ZoomSpeed=".Length..].Trim(), out int zspeed))
+                    {
+                        ZoomStepPercent = Math.Clamp(zspeed, 1, 200);
+                    }
+                    else if (line.StartsWith("FilpScaleMode="))
+                    {
+                        ResetScaleOnSameMode = line["FilpScaleMode=".Length..].Trim() == "1";
                     }
                 }
             }

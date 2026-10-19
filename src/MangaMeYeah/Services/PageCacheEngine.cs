@@ -87,7 +87,8 @@ public sealed class PageCacheEngine : IDisposable
         string filePath,
         int targetMaxWidth,
         int targetMaxHeight,
-        ViewerSettings settings)
+        ViewerSettings settings,
+        bool countColors = false)
     {
         int effW = settings.ResizeCacheEnabled ? targetMaxWidth : 0;
         int effH = settings.ResizeCacheEnabled ? targetMaxHeight : 0;
@@ -96,11 +97,18 @@ public sealed class PageCacheEngine : IDisposable
         {
             Interlocked.Increment(ref _cacheHits);
             existing.LastAccessedUtc = DateTime.UtcNow;
+            if (countColors && existing.UniqueColorCount == 0)
+            {
+                // On-demand color count calculation only when requested (e.g. ImageInfoWindow)
+                var reloaded = DecodeImage(filePath, effW, effH, settings.Filter, countColors: true);
+                _cache[key] = reloaded;
+                return reloaded;
+            }
             return existing;
         }
 
         Interlocked.Increment(ref _cacheMisses);
-        var loaded = DecodeImage(filePath, effW, effH, settings.Filter);
+        var loaded = DecodeImage(filePath, effW, effH, settings.Filter, countColors: countColors);
         _cache[key] = loaded;
         EnforceMemoryLimit(settings.CacheMemoryLimitMb, settings.MaxCachedBitmapCount);
         return loaded;
@@ -151,7 +159,7 @@ public sealed class PageCacheEngine : IDisposable
                 {
                     try
                     {
-                        var entry = DecodeImage(path, effW, effH, settings.Filter);
+                        var entry = DecodeImage(path, effW, effH, settings.Filter, countColors: false);
                         if (!token.IsCancellationRequested)
                         {
                             _cache[key] = entry;
@@ -195,7 +203,7 @@ public sealed class PageCacheEngine : IDisposable
         int targetMaxWidth,
         int targetMaxHeight,
         InterpolationFilter filter,
-        bool countColors = true)
+        bool countColors = false)
     {
         var sw = Stopwatch.StartNew();
         var (origW, origH) = GetImageDimensionsFast(filePath);

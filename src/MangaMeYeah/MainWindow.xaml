@@ -13,7 +13,6 @@
         Drop="Window_Drop"
         DragOver="Window_DragOver"
         PreviewKeyDown="Window_PreviewKeyDown"
-        SizeChanged="Window_SizeChanged"
         Closing="Window_Closing">
     <Grid>
         <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,22,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
@@ -22,6 +21,7 @@
               Background="#808080"
               ClipToBounds="True"
               Focusable="True"
+              SizeChanged="ViewerRootGrid_SizeChanged"
               MouseDown="ViewerRootGrid_MouseDown"
               MouseMove="ViewerRootGrid_MouseMove"
               MouseUp="ViewerRootGrid_MouseUp"
@@ -86,13 +86,15 @@
                     <MenuItem Uid="CTX_40009" Header="１ページ表示" Tag="１ページ表示" Click="MenuItem_Click" />
                     <MenuItem Uid="CTX_40010" Header="２ページ表示" Tag="２ページ表示" Click="MenuItem_Click" />
                     <MenuItem Header="複数枚・連結表示(_M)">
-                        <MenuItem Uid="CTX_40010" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
+                        <MenuItem Uid="CTX_40200" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40201" Header="縦2枚表示" Tag="縦2枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40202" Header="横3枚表示" Tag="横3枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40203" Header="縦3枚表示" Tag="縦3枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40204" Header="横4枚表示" Tag="横4枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40205" Header="縦4枚表示" Tag="縦4枚表示" Click="MenuItem_Click" />
                         <MenuItem Uid="CTX_40206" Header="縦横2×2枚表示 (4枚)" Tag="縦横2×2枚表示" Click="MenuItem_Click" />
+                        <Separator />
+                        <MenuItem Uid="CTX_40210" Header="自動連結画像検出(_D)" Tag="自動連結画像検出" Click="MenuItem_Click" />
                     </MenuItem>
                     <MenuItem Header="見開き方向">
                         <MenuItem Uid="CTX_278" Header="左開き" Tag="左開き" Click="MenuItem_Click" />
@@ -489,13 +491,15 @@
                 <MenuItem Uid="MAIN_40009" Header="１ページ表示" Tag="１ページ表示" Click="MenuItem_Click" />
                 <MenuItem Uid="MAIN_40010" Header="２ページ表示" Tag="２ページ表示" Click="MenuItem_Click" />
                 <MenuItem Header="複数枚・連結表示(_M)">
-                    <MenuItem Uid="MAIN_40010" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
+                    <MenuItem Uid="MAIN_40200" Header="横2枚表示 (標準見開き)" Tag="横2枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40201" Header="縦2枚表示" Tag="縦2枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40202" Header="横3枚表示" Tag="横3枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40203" Header="縦3枚表示" Tag="縦3枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40204" Header="横4枚表示" Tag="横4枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40205" Header="縦4枚表示" Tag="縦4枚表示" Click="MenuItem_Click" />
                     <MenuItem Uid="MAIN_40206" Header="縦横2×2枚表示 (4枚)" Tag="縦横2×2枚表示" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="MAIN_40210" Header="自動連結画像検出(_D)" Tag="自動連結画像検出" Click="MenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="見開き方向">
                     <MenuItem Uid="MAIN_278" Header="左開き" Tag="左開き" Click="MenuItem_Click" />

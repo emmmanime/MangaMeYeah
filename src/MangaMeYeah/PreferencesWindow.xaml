@@ -197,6 +197,15 @@
                                     <CheckBox Content="扉絵用に先頭ページに白紙ページ追加" IsEnabled="False" />
                                 </WrapPanel>
                                 <CheckBox Content="初回単ページの前に白紙ページ追加(先頭ページは除く)" IsEnabled="False" />
+                                <Separator Margin="0,4" />
+                                <WrapPanel>
+                                    <CheckBox x:Name="AutoDetectConnectedCheck"
+                                              Content="自動連結画像検出を有効にする (2〜4枚)"
+                                              Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                    <CheckBox x:Name="SuppressConnectedPromptCheck"
+                                              Content="以降、連結画像を検出しても問い合わせない"
+                                              Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                </WrapPanel>
                             </StackPanel>
                         </GroupBox>
 
@@ -393,12 +402,16 @@
 
                         <GroupBox Header="先読み設定">
                             <StackPanel>
-                                <WrapPanel Margin="0,2,0,6">
+                                <WrapPanel Margin="0,2,0,4">
                                     <TextBlock Text="先読み数(進む方向)" VerticalAlignment="Center" Margin="0,0,8,0" />
                                     <TextBox x:Name="PreloadForwardTextBox" Width="52" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
                                     <TextBlock Text="先読み数(戻る方向)" VerticalAlignment="Center" Margin="28,0,8,0" />
                                     <TextBox x:Name="PreloadBackwardTextBox" Width="52" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
                                 </WrapPanel>
+                                <TextBlock Text="※デフォルトの先読み枚数は4枚とし、4枚以上を設定することで自動連結画像検出が機能します"
+                                           Foreground="#335588"
+                                           FontSize="11.5"
+                                           Margin="0,0,0,6" />
                                 <WrapPanel IsEnabled="False" Margin="0,2,0,4">
                                     <TextBlock Text="ファイルキャッシュ先読み割合" Width="155" VerticalAlignment="Center" />
                                     <TextBox Width="52" Text="75" />

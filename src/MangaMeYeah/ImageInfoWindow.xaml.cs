@@ -13,7 +13,7 @@ public sealed class DisplayedSlotInfo
     public required int Column { get; init; }
     public required int PageNumber { get; init; }
     public required int TotalPages { get; init; }
-    public required CachedPageEntry Entry { get; init; }
+    public required CachedPageEntry Entry { get; set; }
     public required int DisplayedWidth { get; init; }
     public required int DisplayedHeight { get; init; }
 }
@@ -36,13 +36,13 @@ public partial class ImageInfoWindow : Window
             InfoLayoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         }
 
-        // 横並びの枚数に応じて値カラムの表示幅を自動調整
+        // 横並びの枚数に応じて値カラムの表示幅を自動調整 (長いファイル名やパスが読みやすいよう拡大)
         double valueColWidth = cols switch
         {
-            1 => 270,
-            2 => 235,
-            3 => 195,
-            _ => 170
+            1 => 380,
+            2 => 310,
+            3 => 260,
+            _ => 220
         };
 
         // 再帰処理で1枚ずつ配置セルへ振り分けてダイアログを構築
@@ -137,19 +137,25 @@ public partial class ImageInfoWindow : Window
             Grid.SetColumn(labelCell, 0);
             tableGrid.Children.Add(labelCell);
 
-            // 右カラム (白背景 + 値 + ツールチップ + 下部破線)
+            // 右カラム (白背景 + コピー・横スクロール可能な値 + 即時ツールチップ + 下部破線)
             var valueCell = new Grid { Background = Brushes.White };
-            var valueText = new TextBlock
+            var valueBox = new TextBox
             {
                 Text = rows[i].Value,
                 ToolTip = rows[i].Value,
                 FontSize = 12,
                 Foreground = Brushes.Black,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                IsReadOnly = true,
                 VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(5, 0, 4, 0)
+                Margin = new Thickness(4, 0, 4, 0),
+                Padding = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.IBeam
             };
-            valueCell.Children.Add(valueText);
+            ToolTipService.SetInitialShowDelay(valueBox, 100);
+            ToolTipService.SetShowDuration(valueBox, 15000);
+            valueCell.Children.Add(valueBox);
             valueCell.Children.Add(CreateBottomDashedLine(dashStrokeBrush));
             Grid.SetRow(valueCell, i);
             Grid.SetColumn(valueCell, 1);

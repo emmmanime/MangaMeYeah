@@ -31,6 +31,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int _lastDisplayedPageCount = 1;
     private FileSortMode _currentSortMode = FileSortMode.PathNaturalAsc;
 
+    // 強制2ページ表示インデックス (幅広画像等でもSpaceやメニューから2ページ表示を強制可能にする)
+    private int _forcedTwoPageIndex = -1;
+
+    // 連結画像自動検出の状態管理
+    private int _lastEvaluatedConnectedIndex = -1;
+    private ConnectedImageGroupResult? _activeConnectedOverride;
+
+    // レンダリング再入・レイアウト無限ループ防止
+    private bool _isRendering;
+    private double _lastRenderedViewportW;
+    private double _lastRenderedViewportH;
+
     // フルスクリーン状態管理 (0=固定表示, 1=ポップアップ表示[デフォルト], 2=非表示)
     private bool _isFullScreen;
     private int _fullScreenMenuMode = 1;
@@ -52,6 +64,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _scrollStartOffset;
     private readonly DispatcherTimer _longPressTimer;
     private MouseButton _longPressCandidateButton;
+
+    // ナビゲーション履歴管理（前へ戻る時に正確に直前の表示グループ・枚数に戻す）
+    private readonly Stack<int> _navigationHistory = new();
+    private PageDisplayMode _savedMultiPageMode = PageDisplayMode.TwoPage;
 
     // 左上 OSD タイマー
     private readonly DispatcherTimer _osdTimer;
@@ -102,7 +118,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // コンテキストメニューの自動表示を抑止し、MangaMeeya仕様の右クリック動作と両立させる
         ViewerRootGrid.ContextMenuOpening += ViewerRootGrid_ContextMenuOpening;
 
-        _longPressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+        // 長押しタイマー（MangaMeeya準拠の500ms判定で1頁/2頁切り替え）
+        _longPressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _longPressTimer.Tick += LongPressTimer_Tick;
 
         _osdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2200) };
@@ -122,6 +139,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         Loaded += (_, _) =>
         {
+            UpdateMenuCheckStates();
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length > 1 && (File.Exists(args[1]) || Directory.Exists(args[1])))
             {
@@ -190,6 +208,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         ApplyLoupeSettings();
+        UpdateMenuCheckStates();
         if (_imageFiles.Count > 0)
         {
             RenderCurrentPage();
@@ -198,7 +217,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     #region ファイル・フォルダ読込と複数枚ページ表示 (1枚 / 横2 / 縦2 / 横3 / 縦3 / 横4 / 縦4 / 2×2)
 
-    public void OpenPath(string path)
+    public void OpenPath(string path, bool openAtLastPage = false)
     {
         if (File.Exists(path))
         {
@@ -214,15 +233,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _currentFolderPath = path;
             _imageFiles = ImageFolderService.GetImagesInFolder(path, _currentSortMode);
-            _currentIndex = 0;
+            _currentIndex = openAtLastPage && _imageFiles.Count > 0 ? _imageFiles.Count - 1 : 0;
         }
         else
         {
             return;
         }
 
+        _forcedTwoPageIndex = -1;
+        _lastEvaluatedConnectedIndex = -1;
+        _activeConnectedOverride = null;
         _settings.LastOpenedPath = path;
         _cacheEngine.Clear();
+        _navigationHistory.Clear();
 
         if (_imageFiles.Count == 0)
         {
@@ -232,31 +255,88 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageCanvasGrid.Children.Clear();
             Title = $"MangaMeYeah - [{Path.GetFileName(_currentFolderPath)}] (画像なし)";
             ShowOsd("対応する画像ファイルが見つかりませんでした");
+            UpdateMenuCheckStates();
             return;
         }
 
         EmptyStatePanel.Visibility = Visibility.Collapsed;
         RenderCurrentPage();
 
-        if (_settings.StartupOpenMode == 3)
+        if (_settings.StartupOpenMode == 3 && !openAtLastPage)
         {
             OpenThumbnailView(0, _settings.CustomThumbnailSize);
         }
     }
 
-    private (int Rows, int Cols, int Count) ResolveDisplayGridLayout(int startIndex)
+    private void EvaluateConnectedImagesForCurrentIndex()
+    {
+        if (_imageFiles.Count < 2 || _currentIndex < 0 || _currentIndex >= _imageFiles.Count)
+        {
+            _activeConnectedOverride = null;
+            return;
+        }
+
+        if (_forcedTwoPageIndex == _currentIndex)
+        {
+            _activeConnectedOverride = null;
+            return;
+        }
+
+        if (_lastEvaluatedConnectedIndex == _currentIndex)
+        {
+            return;
+        }
+
+        _lastEvaluatedConnectedIndex = _currentIndex;
+        _activeConnectedOverride = null;
+
+        var detected = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex, _cacheEngine, _settings);
+        if (detected == null)
+        {
+            return;
+        }
+
+        if (_settings.AutoDetectConnectedImages)
+        {
+            _activeConnectedOverride = detected;
+            ShowOsd($"連結画像を自動検出: {detected.Description}");
+        }
+        else if (!_settings.SuppressConnectedImagePrompt)
+        {
+            int promptIdx = _currentIndex;
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+            {
+                if (promptIdx != _currentIndex || _activeConnectedOverride != null) return;
+                var prompt = new ConnectedImagePromptWindow(detected.Description) { Owner = this };
+                bool? res = prompt.ShowDialog();
+                if (prompt.SuppressFuturePrompts)
+                {
+                    _settings.SuppressConnectedImagePrompt = true;
+                    _settings.Save();
+                }
+                if (res == true && promptIdx == _currentIndex)
+                {
+                    _activeConnectedOverride = detected;
+                    ShowOsd($"連結表示に切替: {detected.Description}");
+                    RenderCurrentPage();
+                }
+            });
+        }
+    }
+
+    private (int Rows, int Cols, int Count) ResolveDisplayGridLayout(int startIndex, PageDisplayMode effectiveMode)
     {
         int remaining = Math.Max(0, _imageFiles.Count - startIndex);
         if (remaining == 0) return (1, 1, 0);
 
-        switch (_settings.PageMode)
+        switch (effectiveMode)
         {
             case PageDisplayMode.SinglePage:
                 return (1, 1, 1);
 
             case PageDisplayMode.TwoPage:
             case PageDisplayMode.AutoSpread:
-                if (_settings.AddBlankFirstPage && startIndex == 0)
+                if (_forcedTwoPageIndex != startIndex && _settings.AddBlankFirstPage && startIndex == 0)
                 {
                     return (1, 1, 1);
                 }
@@ -305,121 +385,149 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RenderCurrentPage()
     {
-        if (_imageFiles.Count == 0)
+        if (_isRendering) return;
+        _isRendering = true;
+
+        try
         {
-            _currentDisplayedEntries = [];
-            _currentDisplayedSlots = [];
-            EmptyStatePanel.Visibility = Visibility.Visible;
+            if (_imageFiles.Count == 0)
+            {
+                _currentDisplayedEntries = [];
+                _currentDisplayedSlots = [];
+                EmptyStatePanel.Visibility = Visibility.Visible;
+                PageCanvasGrid.Children.Clear();
+                UpdateMenuCheckStates();
+                return;
+            }
+
+            _currentIndex = Math.Clamp(_currentIndex, 0, _imageFiles.Count - 1);
+            if (_forcedTwoPageIndex != _currentIndex)
+            {
+                _forcedTwoPageIndex = -1;
+            }
+
+            EvaluateConnectedImagesForCurrentIndex();
+
+            PageDisplayMode effectiveMode = _activeConnectedOverride?.SuggestedMode ?? _settings.PageMode;
+            SpreadDirection effectiveDirection = _activeConnectedOverride?.SuggestedDirection ?? _settings.SpreadDirection;
+
+            double viewportW = Math.Max(320, ViewerRootGrid.ActualWidth);
+            double viewportH = Math.Max(240, ViewerRootGrid.ActualHeight);
+            _lastRenderedViewportW = viewportW;
+            _lastRenderedViewportH = viewportH;
+
+            var (rows, cols, count) = ResolveDisplayGridLayout(_currentIndex, effectiveMode);
+            _lastDisplayedPageCount = count;
+            _currentGridRows = rows;
+            _currentGridCols = cols;
+
+            int decodeTargetW = GetDecodeTargetSize((int)(viewportW / Math.Max(1, cols)), false);
+            int decodeTargetH = GetDecodeTargetSize((int)(viewportH / Math.Max(1, rows)), false);
+
+            var entries = new List<CachedPageEntry>(count);
+            var indices = new List<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                int fileIdx = _currentIndex + i;
+                indices.Add(fileIdx);
+                entries.Add(_cacheEngine.GetOrLoadPage(_imageFiles[fileIdx], decodeTargetW, decodeTargetH, _settings));
+            }
+            _currentDisplayedEntries = entries;
+
+            // 各スロットの (Row, Col) と表示サイズを計算
+            var slotSizes = CalculateMultiPageSlotSizes(entries, rows, cols, viewportW, viewportH);
+            bool rtl = effectiveDirection == SpreadDirection.RightToLeft;
+
             PageCanvasGrid.Children.Clear();
-            return;
-        }
+            PageCanvasGrid.RowDefinitions.Clear();
+            PageCanvasGrid.ColumnDefinitions.Clear();
 
-        _currentIndex = Math.Clamp(_currentIndex, 0, _imageFiles.Count - 1);
-
-        double viewportW = Math.Max(320, ViewerRootGrid.ActualWidth);
-        double viewportH = Math.Max(240, ViewerRootGrid.ActualHeight);
-
-        var (rows, cols, count) = ResolveDisplayGridLayout(_currentIndex);
-        _lastDisplayedPageCount = count;
-        _currentGridRows = rows;
-        _currentGridCols = cols;
-
-        int decodeTargetW = GetDecodeTargetSize((int)(viewportW / Math.Max(1, cols)), false);
-        int decodeTargetH = GetDecodeTargetSize((int)(viewportH / Math.Max(1, rows)), false);
-
-        var entries = new List<CachedPageEntry>(count);
-        var indices = new List<int>(count);
-        for (int i = 0; i < count; i++)
-        {
-            int fileIdx = _currentIndex + i;
-            indices.Add(fileIdx);
-            entries.Add(_cacheEngine.GetOrLoadPage(_imageFiles[fileIdx], decodeTargetW, decodeTargetH, _settings));
-        }
-        _currentDisplayedEntries = entries;
-
-        // 各スロットの (Row, Col) と表示サイズを計算
-        var slotSizes = CalculateMultiPageSlotSizes(entries, rows, cols, viewportW, viewportH);
-        bool rtl = _settings.SpreadDirection == SpreadDirection.RightToLeft;
-
-        PageCanvasGrid.Children.Clear();
-        PageCanvasGrid.RowDefinitions.Clear();
-        PageCanvasGrid.ColumnDefinitions.Clear();
-
-        for (int r = 0; r < rows; r++)
-        {
-            PageCanvasGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        }
-        for (int c = 0; c < cols; c++)
-        {
-            PageCanvasGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        }
-
-        var slotInfos = new List<DisplayedSlotInfo>(count);
-        for (int k = 0; k < count; k++)
-        {
-            int row;
-            int col;
-            if (rows == 1)
+            for (int r = 0; r < rows; r++)
             {
-                row = 0;
-                col = rtl ? (cols - 1 - k) : k;
+                PageCanvasGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             }
-            else if (cols == 1)
+            for (int c = 0; c < cols; c++)
             {
-                row = k;
-                col = 0;
-            }
-            else
-            {
-                // 2×2 グリッド表示
-                row = k / cols;
-                int colInRow = k % cols;
-                col = rtl ? (cols - 1 - colInRow) : colInRow;
+                PageCanvasGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             }
 
-            var (dispW, dispH) = slotSizes[k];
-            var imgControl = new Image
+            var slotInfos = new List<DisplayedSlotInfo>(count);
+            for (int k = 0; k < count; k++)
             {
-                Source = entries[k].Bitmap,
-                Width = dispW,
-                Height = dispH,
-                Stretch = _settings.ScaleMode == ScaleMode.FitWindow && count == 1 ? Stretch.Fill : Stretch.Uniform,
-                SnapsToDevicePixels = true,
-                UseLayoutRounding = true,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            RenderOptions.SetBitmapScalingMode(imgControl, BitmapScalingMode.HighQuality);
+                int row;
+                int col;
+                if (rows == 1)
+                {
+                    row = 0;
+                    col = rtl ? (cols - 1 - k) : k;
+                }
+                else if (cols == 1)
+                {
+                    // 縦並び時も左開き(上→下) / 右開き(下→上) の切替で上下の配置順を反転可能にする
+                    // ※自動連結検出時は検出された連結順序に従い、手動時は左開き=上→下 / 右開き=下→上または反転に対応
+                    bool invertVertical = _activeConnectedOverride != null
+                        ? (_activeConnectedOverride.SuggestedDirection == SpreadDirection.RightToLeft)
+                        : (_settings.SpreadDirection == SpreadDirection.LeftToRight);
+                    row = invertVertical ? (rows - 1 - k) : k;
+                    col = 0;
+                }
+                else
+                {
+                    // 2×2 グリッド表示
+                    row = k / cols;
+                    int colInRow = k % cols;
+                    col = rtl ? (cols - 1 - colInRow) : colInRow;
+                }
 
-            Grid.SetRow(imgControl, row);
-            Grid.SetColumn(imgControl, col);
-            PageCanvasGrid.Children.Add(imgControl);
+                var (dispW, dispH) = slotSizes[k];
+                var imgControl = new Image
+                {
+                    Source = entries[k].Bitmap,
+                    Width = dispW,
+                    Height = dispH,
+                    Stretch = Stretch.Fill,
+                    SnapsToDevicePixels = true,
+                    UseLayoutRounding = true,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                RenderOptions.SetBitmapScalingMode(imgControl, BitmapScalingMode.HighQuality);
 
-            slotInfos.Add(new DisplayedSlotInfo
+                Grid.SetRow(imgControl, row);
+                Grid.SetColumn(imgControl, col);
+                PageCanvasGrid.Children.Add(imgControl);
+
+                slotInfos.Add(new DisplayedSlotInfo
+                {
+                    Row = row,
+                    Column = col,
+                    PageNumber = indices[k] + 1,
+                    TotalPages = _imageFiles.Count,
+                    Entry = entries[k],
+                    DisplayedWidth = Math.Max(1, (int)Math.Round(dispW)),
+                    DisplayedHeight = Math.Max(1, (int)Math.Round(dispH))
+                });
+            }
+
+            _currentDisplayedSlots = slotInfos;
+            UpdateWindowTitle(indices, entries);
+            UpdateMenuCheckStates();
+
+            ImageScrollViewer.ScrollToTop();
+            ImageScrollViewer.ScrollToHorizontalOffset(0);
+
+            if (_isLoupeActive)
             {
-                Row = row,
-                Column = col,
-                PageNumber = indices[k] + 1,
-                TotalPages = _imageFiles.Count,
-                Entry = entries[k],
-                DisplayedWidth = Math.Max(1, (int)Math.Round(dispW)),
-                DisplayedHeight = Math.Max(1, (int)Math.Round(dispH))
-            });
+                UpdateLoupePosition(_lastMousePosition);
+            }
+
+            // 先読み実行
+            _cacheEngine.TriggerPreload(_imageFiles, _currentIndex, decodeTargetW, decodeTargetH, _settings);
         }
-
-        _currentDisplayedSlots = slotInfos;
-        UpdateWindowTitle(indices, entries);
-
-        ImageScrollViewer.ScrollToTop();
-        ImageScrollViewer.ScrollToHorizontalOffset(0);
-
-        if (_isLoupeActive)
+        finally
         {
-            UpdateLoupePosition(_lastMousePosition);
+            _isRendering = false;
         }
-
-        // 先読み実行
-        _cacheEngine.TriggerPreload(_imageFiles, _currentIndex, decodeTargetW, decodeTargetH, _settings);
     }
 
     private List<(double Width, double Height)> CalculateMultiPageSlotSizes(
@@ -563,12 +671,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private bool ShouldDisplayTwoPages(int index)
     {
-        if (_settings.PageMode == PageDisplayMode.SinglePage)
+        if (index + 1 >= _imageFiles.Count)
         {
             return false;
         }
 
-        if (index + 1 >= _imageFiles.Count)
+        // メニューやスペースキー等で強制的に2ページ表示が指定された場合は幅広画像でも見開き表示する
+        if (_forcedTwoPageIndex == index)
+        {
+            return true;
+        }
+
+        if (_settings.PageMode == PageDisplayMode.SinglePage)
         {
             return false;
         }
@@ -625,12 +739,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int step = Math.Max(1, _lastDisplayedPageCount * Math.Max(1, _settings.StepNextPrevCount));
         if (_currentIndex + step < _imageFiles.Count)
         {
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
             _currentIndex += step;
             RenderCurrentPage();
         }
         else
         {
-            ShowOsd("最終ページです");
+            // 最終ページに達したら親フォルダ内の次のフォルダへ自動移行 (フォルダソート順)
+            string? nextFolder = !string.IsNullOrEmpty(_currentFolderPath)
+                ? ImageFolderService.GetSiblingFolder(_currentFolderPath, +1, _settings.FolderSort)
+                : null;
+            if (nextFolder != null)
+            {
+                OpenPath(nextFolder, openAtLastPage: false);
+                ShowOsd($"次のフォルダへ移動: {Path.GetFileName(nextFolder)}");
+            }
+            else
+            {
+                ShowOsd("最終ページです");
+            }
         }
     }
 
@@ -639,11 +767,59 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_imageFiles.Count == 0) return;
         if (_currentIndex <= 0)
         {
-            ShowOsd("先頭ページです");
+            // 先頭ページでさらに戻った場合は親フォルダ内の前のフォルダの最終ページへ自動移行
+            string? prevFolder = !string.IsNullOrEmpty(_currentFolderPath)
+                ? ImageFolderService.GetSiblingFolder(_currentFolderPath, -1, _settings.FolderSort)
+                : null;
+            if (prevFolder != null)
+            {
+                OpenPath(prevFolder, openAtLastPage: true);
+                ShowOsd($"前のフォルダへ移動: {Path.GetFileName(prevFolder)}");
+            }
+            else
+            {
+                ShowOsd("先頭ページです");
+            }
             return;
         }
 
-        if (_settings.PageMode is PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread)
+        _forcedTwoPageIndex = -1;
+
+        // 1. 直前のナビゲーション履歴があれば正確に元の開始インデックスに戻す (4枚連結などの逆順復元)
+        if (_navigationHistory.Count > 0)
+        {
+            int prevIdx = _navigationHistory.Pop();
+            if (prevIdx < _currentIndex && prevIdx >= 0)
+            {
+                _currentIndex = prevIdx;
+                RenderCurrentPage();
+                return;
+            }
+        }
+
+        // 2. 履歴がない場合（直接ジャンプ等）、手前の画像が4枚・3枚・2枚連結グループか後方判定
+        int candidateStep = 0;
+        if (_currentIndex >= 4)
+        {
+            var g4 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 4, _cacheEngine, _settings);
+            if (g4 != null && g4.ImageCount == 4) candidateStep = 4;
+        }
+        if (candidateStep == 0 && _currentIndex >= 3)
+        {
+            var g3 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 3, _cacheEngine, _settings);
+            if (g3 != null && g3.ImageCount == 3) candidateStep = 3;
+        }
+        if (candidateStep == 0 && _currentIndex >= 2)
+        {
+            var g2 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 2, _cacheEngine, _settings);
+            if (g2 != null && g2.ImageCount == 2) candidateStep = 2;
+        }
+
+        if (candidateStep > 0)
+        {
+            _currentIndex = Math.Max(0, _currentIndex - candidateStep);
+        }
+        else if (_settings.PageMode is PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread)
         {
             int step = 2 * Math.Max(1, _settings.StepNextPrevCount);
             int candidate = Math.Max(0, _currentIndex - step);
@@ -675,6 +851,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int next = Math.Clamp(_currentIndex + delta, 0, _imageFiles.Count - 1);
         if (next != _currentIndex)
         {
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
             _currentIndex = next;
             RenderCurrentPage();
         }
@@ -683,7 +861,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void MoveToSiblingFolder(int offset)
     {
         if (string.IsNullOrEmpty(_currentFolderPath)) return;
-        string? nextFolder = ImageFolderService.GetSiblingFolder(_currentFolderPath, offset);
+        string? nextFolder = ImageFolderService.GetSiblingFolder(_currentFolderPath, offset, _settings.FolderSort);
         if (nextFolder != null)
         {
             OpenPath(nextFolder);
@@ -695,23 +873,51 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void SetPageDisplayMode(PageDisplayMode mode, string label)
+    private void SetPageDisplayMode(PageDisplayMode mode, string label, bool forceTwoPageAtCurrent = false)
     {
         _settings.PageMode = mode;
+        _activeConnectedOverride = null;
+        _forcedTwoPageIndex = forceTwoPageAtCurrent ? _currentIndex : -1;
         ShowOsd(label);
         RenderCurrentPage();
     }
 
     private void TogglePageMode()
     {
-        _settings.PageMode = _settings.PageMode == PageDisplayMode.SinglePage
-            ? PageDisplayMode.TwoPage
-            : PageDisplayMode.SinglePage;
-
-        string modeName = _settings.PageMode == PageDisplayMode.SinglePage ? "1ページ表示" : "横2枚見開き表示";
-        ShowOsd(modeName);
+        _activeConnectedOverride = null;
+        if (_settings.PageMode == PageDisplayMode.SinglePage || _lastDisplayedPageCount == 1)
+        {
+            // 現在1ページ表示中 → 直前の複数枚モード（Vertical2、TwoPage等）へ復帰
+            _settings.PageMode = _savedMultiPageMode != PageDisplayMode.SinglePage
+                ? _savedMultiPageMode
+                : PageDisplayMode.TwoPage;
+            _forcedTwoPageIndex = _currentIndex;
+            ShowOsd($"{GetPageModeDisplayName(_settings.PageMode)} (位置調整完了)");
+        }
+        else
+        {
+            // 現在複数枚表示中（縦2枚、見開き2枚、4枚など）→ 現在のモードを記憶し、1枚ずれ調整用の1ページ表示へ切替
+            _savedMultiPageMode = _settings.PageMode;
+            _forcedTwoPageIndex = -1;
+            _settings.PageMode = PageDisplayMode.SinglePage;
+            ShowOsd("1ページ表示 (1枚ずれ調整用: 次へ進んで再切替)");
+        }
         RenderCurrentPage();
     }
+
+    private static string GetPageModeDisplayName(PageDisplayMode mode) => mode switch
+    {
+        PageDisplayMode.SinglePage => "1ページ表示",
+        PageDisplayMode.TwoPage => "横2枚見開き表示",
+        PageDisplayMode.AutoSpread => "自動見開き表示",
+        PageDisplayMode.Vertical2 => "縦2枚表示",
+        PageDisplayMode.Horizontal3 => "横3枚表示",
+        PageDisplayMode.Vertical3 => "縦3枚表示",
+        PageDisplayMode.Horizontal4 => "横4枚表示",
+        PageDisplayMode.Vertical4 => "縦4枚表示",
+        PageDisplayMode.Grid2x2 => "縦横2×2枚表示",
+        _ => "複数枚表示"
+    };
 
     private void ToggleFullScreen()
     {
@@ -734,6 +940,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             WindowState = _savedWindowState;
             ShowOsd("ウィンドウ表示");
         }
+        UpdateMenuCheckStates();
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, RenderCurrentPage);
     }
 
     private void UpdateFullScreenMenuPopup(Point mousePosInRoot)
@@ -780,13 +988,37 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void ToggleAlignHeightTwoPageAndFixedScale()
+    {
+        if (_settings.ScaleMode == ScaleMode.AlignHeightTwoPage)
+        {
+            _settings.ScaleMode = ScaleMode.FixedScale;
+            int pct = (int)Math.Round(_settings.FixedZoomFactor * 100);
+            ShowOsd($"スケール: 倍率固定(デフォルト) ({pct}%)");
+        }
+        else
+        {
+            _settings.ScaleMode = ScaleMode.AlignHeightTwoPage;
+            ShowOsd("スケール: 縦サイズを揃える(2ページ表示用)");
+        }
+        RenderCurrentPage();
+    }
+
     private void SetScaleMode(ScaleMode mode, string label)
     {
         if (_settings.ResetScaleOnSameMode && _settings.ScaleMode == mode)
         {
-            _settings.ScaleMode = ScaleMode.FixedScale;
-            _settings.FixedZoomFactor = 1.0;
-            ShowOsd("原寸サイズ・倍率固定(100%)に移行");
+            if (mode == ScaleMode.FixedScale)
+            {
+                _settings.ScaleMode = ScaleMode.AlignHeightTwoPage;
+                ShowOsd("スケール: 縦サイズを揃える(2ページ表示用)");
+            }
+            else
+            {
+                _settings.ScaleMode = ScaleMode.FixedScale;
+                int pct = (int)Math.Round(_settings.FixedZoomFactor * 100);
+                ShowOsd($"スケール: 倍率固定(デフォルト) ({pct}%)");
+            }
             RenderCurrentPage();
             return;
         }
@@ -1329,7 +1561,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ToggleFullScreen();
                 break;
             case GestureAction.AlignHeightTwoPage:
-                SetScaleMode(ScaleMode.AlignHeightTwoPage, "縦サイズを揃える(2ページ表示用)");
+                ToggleAlignHeightTwoPageAndFixedScale();
                 break;
             case GestureAction.FitEither:
                 SetScaleMode(ScaleMode.FitEither, "縦横どちらか合わせる");
@@ -1572,11 +1804,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     e.Handled = true;
                     break;
                 case Key.Home:
-                    if (_imageFiles.Count > 0) { _currentIndex = 0; RenderCurrentPage(); ShowOsd("先頭ページ"); }
+                    if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = 0; RenderCurrentPage(); ShowOsd("先頭ページ"); }
                     e.Handled = true;
                     break;
                 case Key.End:
-                    if (_imageFiles.Count > 0) { _currentIndex = _imageFiles.Count - 1; RenderCurrentPage(); ShowOsd("最終ページ"); }
+                    if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = _imageFiles.Count - 1; RenderCurrentPage(); ShowOsd("最終ページ"); }
                     e.Handled = true;
                     break;
                 case Key.Space:
@@ -1649,7 +1881,84 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     #endregion
 
-    #region メニューバー＆コンテキストメニューハンドラ
+    #region メニューバー＆コンテキストメニューハンドラ＆チェック状態同期
+
+    private void UpdateMenuCheckStates()
+    {
+        if (MainMenuBar?.Items != null)
+        {
+            UpdateMenuItemsRecursive(MainMenuBar.Items);
+        }
+        if (ViewerContextMenu?.Items != null)
+        {
+            UpdateMenuItemsRecursive(ViewerContextMenu.Items);
+        }
+    }
+
+    private void UpdateMenuItemsRecursive(ItemCollection items)
+    {
+        PageDisplayMode effectiveMode = _activeConnectedOverride?.SuggestedMode ?? _settings.PageMode;
+        bool isSingleCurrentlyDisplayed = _imageFiles.Count > 0
+            ? (_lastDisplayedPageCount == 1 && effectiveMode is PageDisplayMode.SinglePage or PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread)
+            : (_settings.PageMode == PageDisplayMode.SinglePage);
+        bool isTwoHorizCurrentlyDisplayed = _imageFiles.Count > 0
+            ? (_lastDisplayedPageCount == 2 && _currentGridRows == 1 && _currentGridCols == 2)
+            : (_settings.PageMode is PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread);
+
+        foreach (object? obj in items)
+        {
+            if (obj is not MenuItem mi) continue;
+
+            int id = ParseMenuId(mi.Uid);
+            if (id != 0)
+            {
+                bool? checkState = id switch
+                {
+                    40009 => isSingleCurrentlyDisplayed,
+                    40010 => isTwoHorizCurrentlyDisplayed,
+                    40200 => _settings.PageMode is PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread && !isSingleCurrentlyDisplayed,
+                    40201 => effectiveMode == PageDisplayMode.Vertical2,
+                    40202 => effectiveMode == PageDisplayMode.Horizontal3,
+                    40203 => effectiveMode == PageDisplayMode.Vertical3,
+                    40204 => effectiveMode == PageDisplayMode.Horizontal4,
+                    40205 => effectiveMode == PageDisplayMode.Vertical4,
+                    40206 => effectiveMode == PageDisplayMode.Grid2x2,
+                    40210 => _settings.AutoDetectConnectedImages,
+                    278 => _settings.SpreadDirection == SpreadDirection.LeftToRight,
+                    279 => _settings.SpreadDirection == SpreadDirection.RightToLeft,
+                    131 => _settings.AutoSpreadEnabled,
+                    119 => _isFullScreen,
+                    380 => _fullScreenMenuMode == 0,
+                    381 => _fullScreenMenuMode == 1,
+                    382 => _fullScreenMenuMode == 2,
+                    172 => _isLoupeActive,
+                    40100 => _settings.ScaleMode == ScaleMode.FixedScale,
+                    40101 => _settings.ScaleMode == ScaleMode.FitEither,
+                    40102 => _settings.ScaleMode == ScaleMode.FitWindow,
+                    40103 => _settings.ScaleMode == ScaleMode.OriginalSize,
+                    40104 => _settings.ScaleMode == ScaleMode.FitWindowToImage,
+                    40105 => _settings.ScaleMode == ScaleMode.SpecifiedScale,
+                    40106 => _settings.ScaleMode == ScaleMode.AlignHeightTwoPage,
+                    40107 => _settings.ShrinkOnly,
+                    >= 351 and <= 357 => (int)_settings.Filter == id,
+                    40019 => _settings.PreloadEnabled,
+                    >= 400 and <= 412 => (int)_currentSortMode == id,
+                    >= 344 and <= 349 => (int)_settings.FolderSort == id,
+                    _ => null
+                };
+
+                if (checkState.HasValue)
+                {
+                    mi.IsChecked = checkState.Value;
+                }
+            }
+
+            if (mi.Items.Count > 0)
+            {
+                UpdateMenuItemsRecursive(mi.Items);
+            }
+        }
+    }
 
     private void MenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -1693,10 +2002,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 CopyCurrentImageToClipboard();
                 return;
             case 40009: // 1ページ表示
-                SetPageDisplayMode(PageDisplayMode.SinglePage, "1ページ表示");
+                SetPageDisplayMode(PageDisplayMode.SinglePage, "1ページ表示", forceTwoPageAtCurrent: false);
                 return;
-            case 40010: // 横2枚表示 (2ページ見開き)
-                SetPageDisplayMode(PageDisplayMode.TwoPage, "横2枚表示 (見開き)");
+            case 40010: // 2ページ表示 (幅広画像でも強制的に2ページ表示可能)
+            case 40200: // 横2枚表示 (標準見開き)
+                SetPageDisplayMode(PageDisplayMode.TwoPage, "横2枚表示 (見開き)", forceTwoPageAtCurrent: true);
                 return;
             case 40201: // 縦2枚表示
                 SetPageDisplayMode(PageDisplayMode.Vertical2, "縦2枚表示");
@@ -1716,6 +2026,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             case 40206: // 縦横2×2枚表示
                 SetPageDisplayMode(PageDisplayMode.Grid2x2, "縦横2×2枚表示 (4枚)");
                 return;
+            case 40210: // 自動連結画像検出
+                _settings.AutoDetectConnectedImages = !_settings.AutoDetectConnectedImages;
+                _lastEvaluatedConnectedIndex = -1;
+                ShowOsd(_settings.AutoDetectConnectedImages ? "自動連結画像検出: ON" : "自動連結画像検出: OFF");
+                RenderCurrentPage();
+                return;
             case 278: // 左開き
                 _settings.SpreadDirection = SpreadDirection.LeftToRight;
                 ShowOsd("見開き方向: 左開き");
@@ -1728,6 +2044,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             case 131: // 自動見開き表示
                 _settings.AutoSpreadEnabled = !_settings.AutoSpreadEnabled;
+                _forcedTwoPageIndex = -1;
                 ShowOsd(_settings.AutoSpreadEnabled ? "自動見開き表示: ON" : "自動見開き表示: OFF");
                 RenderCurrentPage();
                 return;
@@ -1747,23 +2064,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             case 380: // フルスクリーン時: メニュー固定表示
                 _fullScreenMenuMode = 0;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Visible;
+                UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: 固定表示");
                 return;
             case 381: // フルスクリーン時: メニューポップアップ表示
                 _fullScreenMenuMode = 1;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Collapsed;
+                UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: ポップアップ表示");
                 return;
             case 382: // フルスクリーン時: メニュー非表示
                 _fullScreenMenuMode = 2;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Collapsed;
+                UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: 非表示");
                 return;
             case 172: // ルーペ表示
                 ToggleLoupe();
+                UpdateMenuCheckStates();
                 return;
             case 40100:
-                SetScaleMode(ScaleMode.FixedScale, "倍率固定(デフォルト)");
+                SetScaleMode(ScaleMode.FixedScale, $"倍率固定(デフォルト) ({(int)Math.Round(_settings.FixedZoomFactor * 100)}%)");
                 return;
             case 40101:
                 SetScaleMode(ScaleMode.FitEither, "縦横どちらか合わせる");
@@ -1816,7 +2137,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 StepPage(+50);
                 return;
             case 148:
-                if (_imageFiles.Count > 0) { _currentIndex = _imageFiles.Count - 1; RenderCurrentPage(); }
+                if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = _imageFiles.Count - 1; RenderCurrentPage(); }
                 return;
             case 149:
                 PrevPage();
@@ -1834,7 +2155,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 StepPage(-50);
                 return;
             case 154:
-                if (_imageFiles.Count > 0) { _currentIndex = 0; RenderCurrentPage(); }
+                if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = 0; RenderCurrentPage(); }
                 return;
             case 188:
                 MoveToSiblingFolder(+1);
@@ -1850,19 +2171,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             case 40019:
                 _settings.PreloadEnabled = !_settings.PreloadEnabled;
+                UpdateMenuCheckStates();
                 ShowOsd(_settings.PreloadEnabled ? "ファイル先読み: ON" : "ファイル先読み: OFF");
                 return;
             case >= 400 and <= 412:
                 _currentSortMode = (FileSortMode)menuId;
+                UpdateMenuCheckStates();
                 if (_imageFiles.Count > 0)
                 {
                     string currentFile = _imageFiles[_currentIndex];
                     _imageFiles = ImageFolderService.SortFiles(_imageFiles, _currentSortMode);
                     int idx = _imageFiles.IndexOf(currentFile);
                     _currentIndex = idx >= 0 ? idx : 0;
+                    _lastEvaluatedConnectedIndex = -1;
                     RenderCurrentPage();
-                    ShowOsd($"ソート変更: {menuItem.Tag}");
                 }
+                ShowOsd($"ファイルソート変更: {menuItem.Tag}");
+                return;
+            case >= 344 and <= 349:
+                _settings.FolderSort = (FolderSortMode)menuId;
+                UpdateMenuCheckStates();
+                ShowOsd($"フォルダソート変更: {menuItem.Tag}");
                 return;
             case 341: // レジストリ関連設定
                 OpenRegistrySettingsDialog();
@@ -1953,6 +2282,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // 必要な場合のみ画像情報ダイアログ表示時に使用色数をオンデマンド計算 (通常閲覧時の負荷ゼロ化)
+        foreach (var slot in _currentDisplayedSlots)
+        {
+            if (slot.Entry.UniqueColorCount == 0)
+            {
+                var withColors = _cacheEngine.GetOrLoadPage(slot.Entry.FilePath, 0, 0, _settings, countColors: true);
+                slot.Entry = withColors;
+            }
+        }
+
         var dlg = new ImageInfoWindow(_currentDisplayedSlots, _currentGridRows, _currentGridCols)
         {
             Owner = this
@@ -1987,7 +2326,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     #endregion
 
-    #region ドラッグ＆ドロップ・リサイズ・OSD 補助
+    #region ドラッグ＆ドロップ・リサイズ・モニター移動・最大化対応・OSD 補助
 
     private void Window_DragOver(object sender, DragEventArgs e)
     {
@@ -2006,12 +2345,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void ViewerRootGrid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_imageFiles.Count > 0)
+        if (_imageFiles.Count == 0) return;
+        if (Math.Abs(e.NewSize.Width - _lastRenderedViewportW) < 2 &&
+            Math.Abs(e.NewSize.Height - _lastRenderedViewportH) < 2)
         {
-            RenderCurrentPage();
+            return;
         }
+
+        _lastRenderedViewportW = e.NewSize.Width;
+        _lastRenderedViewportH = e.NewSize.Height;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            if (!_isRendering && _imageFiles.Count > 0)
+            {
+                RenderCurrentPage();
+            }
+        });
     }
 
     private void ShowOsd(string message)
