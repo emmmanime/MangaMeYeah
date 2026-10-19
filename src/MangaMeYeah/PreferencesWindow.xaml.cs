@@ -50,6 +50,11 @@ public partial class PreferencesWindow : Window
         ScrollUnitPixelRadio.IsChecked = _settings.ScrollUnitMode == 2;
 
         // Tab 2: 一般設定 1
+        SubfolderConfirmRadio.IsChecked = _settings.SubfolderReadMode == 0;
+        SubfolderIncludeRadio.IsChecked = _settings.SubfolderReadMode == 1;
+        SubfolderExcludeRadio.IsChecked = _settings.SubfolderReadMode == 2;
+        IncludeFolderArchivesCheck.IsChecked = _settings.IncludeFolderArchivesAsSubfolders;
+        IncludeArchiveArchivesCheck.IsChecked = _settings.IncludeArchiveArchivesAsSubfolders;
         InitialFolderTextBox.Text = _settings.InitialFolderPath;
         OpenFromStartRadio.IsChecked = _settings.StartupOpenMode != 3;
         OpenThumbnailRadio.IsChecked = _settings.StartupOpenMode == 3;
@@ -133,6 +138,11 @@ public partial class PreferencesWindow : Window
         else _settings.ScrollUnitMode = 2;
 
         // Tab 2: 一般設定 1
+        if (SubfolderConfirmRadio.IsChecked == true) _settings.SubfolderReadMode = 0;
+        else if (SubfolderExcludeRadio.IsChecked == true) _settings.SubfolderReadMode = 2;
+        else _settings.SubfolderReadMode = 1;
+        _settings.IncludeFolderArchivesAsSubfolders = IncludeFolderArchivesCheck.IsChecked == true;
+        _settings.IncludeArchiveArchivesAsSubfolders = IncludeArchiveArchivesCheck.IsChecked == true;
         _settings.InitialFolderPath = InitialFolderTextBox.Text.Trim();
         _settings.StartupOpenMode = OpenThumbnailRadio.IsChecked == true ? 3 : 1;
         _settings.AddBlankFirstPage = AddBlankFirstPageCheck.IsChecked == true;

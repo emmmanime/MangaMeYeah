@@ -158,12 +158,12 @@
                     <StackPanel>
                         <GroupBox Header="読み込み設定">
                             <StackPanel>
-                                <StackPanel IsEnabled="False">
-                                    <RadioButton Content="サブフォルダがある場合確認のダイアログを表示する" IsChecked="True" />
-                                    <RadioButton Content="サブフォルダも読み込む" />
-                                    <RadioButton Content="サブフォルダは読み込まない" />
-                                    <CheckBox Content="フォルダ内書庫もサブフォルダに含める" IsChecked="True" Margin="18,2,0,2" />
-                                    <CheckBox Content="書庫内書庫もサブフォルダに含める" IsChecked="False" Margin="18,2,0,4" />
+                                <StackPanel>
+                                    <RadioButton x:Name="SubfolderConfirmRadio" Content="サブフォルダがある場合確認のダイアログを表示する" GroupName="SubfolderMode" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="SubfolderIncludeRadio" Content="サブフォルダも読み込む" GroupName="SubfolderMode" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="SubfolderExcludeRadio" Content="サブフォルダは読み込まない" GroupName="SubfolderMode" Checked="SettingControl_Changed" />
+                                    <CheckBox x:Name="IncludeFolderArchivesCheck" Content="フォルダ内書庫もサブフォルダに含める" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,2" />
+                                    <CheckBox x:Name="IncludeArchiveArchivesCheck" Content="書庫内書庫もサブフォルダに含める" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,4" />
                                 </StackPanel>
 
                                 <DockPanel Margin="0,4,0,4">

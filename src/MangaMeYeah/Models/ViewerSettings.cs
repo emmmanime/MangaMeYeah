@@ -122,7 +122,10 @@ public class ViewerSettings
     public int WheelScrollStepY { get; set; } = 25;
     public int ScrollUnitMode { get; set; } = 0; // 0=ウインドウサイズ(%), 1=画像サイズ(%), 2=固定値(pixel)
 
-    // 一般設定 1 (Tab 2)
+    // 一般設定 1 (Tab 2: 読み込み設定)
+    public int SubfolderReadMode { get; set; } = 1; // 0=確認ダイアログ, 1=サブフォルダも読み込む, 2=サブフォルダは読み込まない
+    public bool IncludeFolderArchivesAsSubfolders { get; set; } = true; // フォルダ内書庫もサブフォルダに含める
+    public bool IncludeArchiveArchivesAsSubfolders { get; set; } = true; // 書庫内書庫もサブフォルダに含める
     public string InitialFolderPath { get; set; } = string.Empty;
     public int StartupOpenMode { get; set; } = 1; // 1=先頭から開く, 3=サムネイル表示
     public bool AddBlankFirstPage { get; set; } = false;

@@ -58,7 +58,32 @@ public static class ImageFolderService
         return SupportedExtensions.Contains(ext);
     }
 
-    public static List<string> GetImagesInFolder(string folderPath, FileSortMode sortMode = FileSortMode.PathNaturalAsc)
+    public static bool HasSubfoldersOrArchives(string folderPath, bool checkArchives = true)
+    {
+        try
+        {
+            if (Directory.EnumerateDirectories(folderPath).Any(d =>
+                !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) &&
+                !Path.GetFileName(d).StartsWith('.')))
+            {
+                return true;
+            }
+
+            if (checkArchives && Directory.EnumerateFiles(folderPath).Any(ArchiveImageService.IsArchiveFile))
+            {
+                return true;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    public static List<string> GetImagesInFolder(
+        string folderPath,
+        FileSortMode sortMode = FileSortMode.PathNaturalAsc,
+        bool includeSubfolders = true,
+        bool includeFolderArchives = true,
+        bool includeArchiveArchives = true)
     {
         if (!Directory.Exists(folderPath))
         {
@@ -66,38 +91,88 @@ public static class ImageFolderService
         }
 
         var files = new List<string>();
-        EnumerateImagesRecursive(folderPath, files);
-        return SortFiles(files, sortMode);
+        EnumerateImagesHierarchical(folderPath, files, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives);
+
+        if (sortMode == FileSortMode.Random)
+        {
+            Random.Shared.Shuffle(CollectionsMarshal.AsSpan(files));
+        }
+
+        return files;
     }
 
-    private static void EnumerateImagesRecursive(string rootDir, List<string> accumulator)
+    private static void EnumerateImagesHierarchical(
+        string currentDir,
+        List<string> accumulator,
+        FileSortMode sortMode,
+        bool includeSubfolders,
+        bool includeFolderArchives,
+        bool includeArchiveArchives)
     {
+        bool isDescending = sortMode is FileSortMode.PathNaturalDesc or FileSortMode.PathDesc;
+
+        // 1. Direct files in current folder
+        var directFiles = new List<string>();
         try
         {
-            foreach (string file in Directory.EnumerateFiles(rootDir))
+            foreach (string file in Directory.EnumerateFiles(currentDir))
             {
                 if (IsSupportedImageFile(file))
                 {
-                    accumulator.Add(file);
+                    directFiles.Add(file);
                 }
             }
         }
         catch { }
 
-        try
+        // If ascending, root files (covers, etc.) come before subfolders
+        if (!isDescending && directFiles.Count > 0)
         {
-            foreach (string subDir in Directory.EnumerateDirectories(rootDir))
-            {
-                string dirName = Path.GetFileName(subDir);
-                if (dirName.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) ||
-                    dirName.StartsWith('.'))
-                {
-                    continue;
-                }
-                EnumerateImagesRecursive(subDir, accumulator);
-            }
+            accumulator.AddRange(SortFiles(directFiles, sortMode));
         }
-        catch { }
+
+        if (includeSubfolders)
+        {
+            try
+            {
+                var subDirs = Directory.EnumerateDirectories(currentDir)
+                    .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) &&
+                                !Path.GetFileName(d).StartsWith('.'))
+                    .ToList();
+
+                var archives = includeFolderArchives
+                    ? Directory.EnumerateFiles(currentDir).Where(ArchiveImageService.IsArchiveFile).ToList()
+                    : new List<string>();
+
+                var childContainers = subDirs.Concat(archives).ToList();
+                childContainers.Sort((a, b) => NaturalStringComparer.Instance.Compare(Path.GetFileName(a), Path.GetFileName(b)));
+
+                if (isDescending)
+                {
+                    childContainers.Reverse();
+                }
+
+                foreach (var item in childContainers)
+                {
+                    if (Directory.Exists(item))
+                    {
+                        EnumerateImagesHierarchical(item, accumulator, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives);
+                    }
+                    else if (ArchiveImageService.IsArchiveFile(item))
+                    {
+                        var archiveImages = ArchiveImageService.GetImagesInArchive(item, sortMode, includeArchiveArchives);
+                        accumulator.AddRange(archiveImages);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // If descending, root files come after subfolders
+        if (isDescending && directFiles.Count > 0)
+        {
+            accumulator.AddRange(SortFiles(directFiles, sortMode));
+        }
     }
 
     public static List<string> SortFiles(IEnumerable<string> files, FileSortMode sortMode)
@@ -166,6 +241,47 @@ public static class ImageFolderService
                 break;
         }
         return list;
+    }
+
+    public static List<string> SortFilesHierarchical(IEnumerable<string> files, FileSortMode sortMode)
+    {
+        var list = files.ToList();
+        if (list.Count <= 1 || sortMode == FileSortMode.Random)
+        {
+            return SortFiles(list, sortMode);
+        }
+
+        static string GetContainerKey(string path)
+        {
+            int pipeIdx = path.LastIndexOf('|');
+            if (pipeIdx >= 0)
+            {
+                return path[..pipeIdx];
+            }
+            return Path.GetDirectoryName(path) ?? string.Empty;
+        }
+
+        var groups = list.GroupBy(GetContainerKey).ToList();
+        if (groups.Count <= 1)
+        {
+            return SortFiles(list, sortMode);
+        }
+
+        bool isDescending = sortMode is FileSortMode.PathNaturalDesc or FileSortMode.PathDesc;
+
+        var sortedGroups = groups.Select(g => new
+        {
+            Container = g.Key,
+            Files = SortFiles(g, sortMode)
+        }).ToList();
+
+        sortedGroups.Sort((a, b) => NaturalStringComparer.Instance.Compare(a.Container, b.Container));
+        if (isDescending)
+        {
+            sortedGroups.Reverse();
+        }
+
+        return sortedGroups.SelectMany(g => g.Files).ToList();
     }
 
     public static List<string> SortFolders(IEnumerable<string> folders, FolderSortMode sortMode)
@@ -241,11 +357,16 @@ public static class ImageFolderService
         return null;
     }
 
-    public static bool HasAnySupportedImages(string dirPath)
+    public static bool HasAnySupportedImages(string dirPath, bool includeArchives = true)
     {
         try
         {
             if (Directory.EnumerateFiles(dirPath).Any(IsSupportedImageFile))
+            {
+                return true;
+            }
+
+            if (includeArchives && Directory.EnumerateFiles(dirPath).Any(ArchiveImageService.IsArchiveFile))
             {
                 return true;
             }
@@ -257,7 +378,7 @@ public static class ImageFolderService
                 {
                     continue;
                 }
-                if (HasAnySupportedImages(sub))
+                if (HasAnySupportedImages(sub, includeArchives))
                 {
                     return true;
                 }

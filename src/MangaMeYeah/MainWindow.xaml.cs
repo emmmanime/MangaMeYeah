@@ -396,6 +396,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return 0;
     }
 
+    private bool ResolveSubfolderIncludeDecision(string folderPath)
+    {
+        switch (_settings.SubfolderReadMode)
+        {
+            case 1: // サブフォルダも読み込む
+                return true;
+            case 2: // サブフォルダは読み込まない
+                return false;
+            case 0: // 確認ダイアログ
+            default:
+                if (ImageFolderService.HasSubfoldersOrArchives(folderPath, _settings.IncludeFolderArchivesAsSubfolders))
+                {
+                    var result = MessageBox.Show(
+                        this,
+                        "サブフォルダ（および書庫）内の画像も読み込みますか？\n\n[はい]: サブフォルダも含める\n[いいえ]: 現在のフォルダのみ",
+                        "サブフォルダ読み込み",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+                    return result == MessageBoxResult.Yes;
+                }
+                return false;
+        }
+    }
+
     public void OpenPath(string path, bool openAtLastPage = false)
     {
         SaveCurrentResumeState();
@@ -406,7 +430,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (File.Exists(arch))
             {
                 _currentFolderPath = arch;
-                _imageFiles = ArchiveImageService.GetImagesInArchive(arch, _currentSortMode);
+                _imageFiles = ArchiveImageService.GetImagesInArchive(arch, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders);
                 int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
                 _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(arch, openAtLastPage);
             }
@@ -419,7 +443,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             if (!File.Exists(path)) return;
             _currentFolderPath = path;
-            _imageFiles = ArchiveImageService.GetImagesInArchive(path, _currentSortMode);
+            _imageFiles = ArchiveImageService.GetImagesInArchive(path, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders);
             _currentIndex = DetermineInitialIndex(path, openAtLastPage);
         }
         else if (File.Exists(path))
@@ -427,15 +451,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             string? dir = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(dir)) return;
 
+            bool includeSub = ResolveSubfolderIncludeDecision(dir);
             _currentFolderPath = dir;
-            _imageFiles = ImageFolderService.GetImagesInFolder(dir, _currentSortMode);
+            _imageFiles = ImageFolderService.GetImagesInFolder(
+                dir,
+                _currentSortMode,
+                includeSubfolders: includeSub,
+                includeFolderArchives: _settings.IncludeFolderArchivesAsSubfolders,
+                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders);
             int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
             _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(dir, openAtLastPage);
         }
         else if (Directory.Exists(path))
         {
+            bool includeSub = ResolveSubfolderIncludeDecision(path);
             _currentFolderPath = path;
-            _imageFiles = ImageFolderService.GetImagesInFolder(path, _currentSortMode);
+            _imageFiles = ImageFolderService.GetImagesInFolder(
+                path,
+                _currentSortMode,
+                includeSubfolders: includeSub,
+                includeFolderArchives: _settings.IncludeFolderArchivesAsSubfolders,
+                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders);
             _currentIndex = DetermineInitialIndex(path, openAtLastPage);
         }
         else
@@ -2513,7 +2549,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 if (_imageFiles.Count > 0)
                 {
                     string currentFile = _imageFiles[_currentIndex];
-                    _imageFiles = ImageFolderService.SortFiles(_imageFiles, _currentSortMode);
+                    _imageFiles = ImageFolderService.SortFilesHierarchical(_imageFiles, _currentSortMode);
                     int idx = _imageFiles.IndexOf(currentFile);
                     _currentIndex = idx >= 0 ? idx : 0;
                     _lastEvaluatedConnectedIndex = -1;
