@@ -145,6 +145,7 @@ public class ViewerSettings
     public bool FullScreenTopMost { get; set; } = false;
     public bool OpenLastFileOnStartup { get; set; } = false;
     public bool SaveWindowPlacementOnExit { get; set; } = true;
+    public bool PreventMultipleInstances { get; set; } = false;
     public bool IsFullScreen { get; set; } = false;
     public double SavedWindowWidth { get; set; } = 1120;
     public double SavedWindowHeight { get; set; } = 800;

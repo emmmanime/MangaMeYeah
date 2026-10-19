@@ -368,7 +368,7 @@
                         <GroupBox Header="システム関連">
                             <StackPanel>
                                 <CheckBox x:Name="SaveWindowPlacementCheck" Content="終了時ウインドウ位置サイズを保存する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
-                                <CheckBox Content="複数起動を禁止する" IsEnabled="False" />
+                                <CheckBox x:Name="PreventMultipleInstancesCheck" Content="複数起動を禁止する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
                                 <CheckBox Content="マウスメッセージをフックする" IsChecked="True" IsEnabled="False" />
                                 <CheckBox Content="カレントフォルダを監視する" IsEnabled="False" />
                                 <CheckBox Content="スクリーンセーバ及びモニタ省電力を抑制する" IsEnabled="False" />

@@ -88,6 +88,7 @@ public partial class PreferencesWindow : Window
         FullScreenTopMostCheck.IsChecked = _settings.FullScreenTopMost;
         OpenLastFileCheck.IsChecked = _settings.OpenLastFileOnStartup;
         SaveWindowPlacementCheck.IsChecked = _settings.SaveWindowPlacementOnExit;
+        PreventMultipleInstancesCheck.IsChecked = _settings.PreventMultipleInstances;
 
         // Tab 5: キャッシュ設定
         MaxCachedBitmapTextBox.Text = _settings.MaxCachedBitmapCount.ToString();
@@ -169,6 +170,7 @@ public partial class PreferencesWindow : Window
         _settings.FullScreenTopMost = FullScreenTopMostCheck.IsChecked == true;
         _settings.OpenLastFileOnStartup = OpenLastFileCheck.IsChecked == true;
         _settings.SaveWindowPlacementOnExit = SaveWindowPlacementCheck.IsChecked == true;
+        _settings.PreventMultipleInstances = PreventMultipleInstancesCheck.IsChecked == true;
 
         // Tab 5: キャッシュ設定
         if (int.TryParse(MaxCachedBitmapTextBox.Text, out int maxBmp))

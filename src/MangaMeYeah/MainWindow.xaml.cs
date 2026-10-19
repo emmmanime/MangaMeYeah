@@ -138,8 +138,40 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+    private const int SW_RESTORE = 9;
     private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
     private const int WM_GETMINMAXINFO = 0x0024;
+
+    public void ActivateFromAnotherInstance(string[] args)
+    {
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        if (WindowState == WindowState.Minimized)
+        {
+            ShowWindowAsync(handle, SW_RESTORE);
+            WindowState = WindowState.Normal;
+        }
+
+        SetForegroundWindow(handle);
+        Activate();
+        Topmost = true;
+        Topmost = false;
+        Focus();
+
+        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        {
+            string targetPath = args[0].Trim('"');
+            if (File.Exists(targetPath) || Directory.Exists(targetPath))
+            {
+                OpenPath(targetPath);
+            }
+        }
+    }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
@@ -867,6 +899,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             bool firstLandscape = _cacheEngine.IsLandscape(_imageFiles[index]);
             bool secondLandscape = _cacheEngine.IsLandscape(_imageFiles[index + 1]);
             if (firstLandscape || secondLandscape)
+            {
+                return false;
+            }
+        }
+
+        // 次の画像 (index + 1) が連結画像の開始位置である場合、現在ページと次ページを見開き結合してしまうと
+        // 連結グループが破壊（1枚巻き込まれて残りが欠落・奇数枚化）されてしまうため、現在ページは単ページ表示として
+        // 次ページで連結グループが丸ごと揃って表示されるようアライメントを維持する
+        if (_settings.AutoDetectConnectedImages && index + 1 < _imageFiles.Count)
+        {
+            var nextConnected = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, index + 1, _cacheEngine, _settings);
+            if (nextConnected != null)
             {
                 return false;
             }
