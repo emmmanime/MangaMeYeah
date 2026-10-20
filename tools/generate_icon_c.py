@@ -266,8 +266,9 @@ def generate_multi_size_ico(ico_path: str):
     png_blobs = []
 
     for sz in sizes:
-        # 正解は絶対に「漫」
-        ch = "漫"
+        # 小サイズ（16px, 24px）は潰れを防ぐため視認性の高い「マ」を採用
+        # 中・大サイズ（32px以上）は詳細な「漫」を採用
+        ch = "漫" if sz >= 32 else "マ"
         im = draw_icon_canvas(sz, ch)
         buf = io.BytesIO()
         im.save(buf, format="PNG")
@@ -328,12 +329,12 @@ def generate_preview_comparison(output_png: str):
     draw.text((30, 20), "MangaMeYeah アイコン新デザイン（C案 RocknRoll One × アール付きブック × 明るい青）", font=title_font, fill=(245, 245, 250, 255))
     draw.text((30, 52), "・MangaMeeya風のページアール（曲面） ＋ アール追従コマ割り ＋ ブルーグレー影 ＋ 白背景対応の濃紺エッジ付き明るい青", font=body_font, fill=(160, 190, 220, 255))
 
-    # Pre-render icons: all sizes use 「漫」
+    # Pre-render icons: large sizes use 「漫」, small sizes use 「マ」
     im256 = draw_icon_canvas(256, "漫")
     im48 = draw_icon_canvas(48, "漫")
     im32 = draw_icon_canvas(32, "漫")
-    im24 = draw_icon_canvas(24, "漫")
-    im16 = draw_icon_canvas(16, "漫")
+    im24 = draw_icon_canvas(24, "マ")
+    im16 = draw_icon_canvas(16, "マ")
     im16_mag = im16.resize((64, 64), Image.Resampling.NEAREST)
 
     # 3 Background Test Strips
@@ -358,19 +359,19 @@ def generate_preview_comparison(output_png: str):
 
         # 48px
         sheet.paste(im48, (230, y0 + 75), im48)
-        draw.text((236, y0 + 130), "48px", font=body_font, fill=text_col)
+        draw.text((236, y0 + 130), "48px「漫」", font=body_font, fill=text_col)
 
         # 32px
         sheet.paste(im32, (340, y0 + 83), im32)
-        draw.text((342, y0 + 130), "32px", font=body_font, fill=text_col)
+        draw.text((342, y0 + 130), "32px「漫」", font=body_font, fill=text_col)
 
-        # 24px (漫)
+        # 24px (マ)
         sheet.paste(im24, (440, y0 + 87), im24)
-        draw.text((440, y0 + 130), "24px「漫」", font=body_font, fill=text_col)
+        draw.text((440, y0 + 130), "24px「マ」", font=body_font, fill=text_col)
 
-        # 16px (漫)
+        # 16px (マ)
         sheet.paste(im16, (550, y0 + 91), im16)
-        draw.text((545, y0 + 130), "16px「漫」", font=body_font, fill=text_col)
+        draw.text((545, y0 + 130), "16px「マ」", font=body_font, fill=text_col)
 
         # 16px 4x Magnified
         sheet.paste(im16_mag, (660, y0 + 59), im16_mag)
