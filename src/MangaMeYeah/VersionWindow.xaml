@@ -2,54 +2,58 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="バージョン情報"
-        Width="380"
-        Height="165"
+        Icon="pack://application:,,,/Assets/MangaMeYeah.ico"
+        Width="430"
+        Height="270"
+        SizeToContent="WidthAndHeight"
+        MinWidth="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        Background="#F0F0F0">
-    <Grid Margin="18,16,18,16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        Background="#FFFFFF">
+    <Grid Margin="32,24,32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- アプリアイコン (中央・シャドウ付き) -->
+            <Image Source="pack://application:,,,/Assets/MangaMeYeah.ico"
+                   Width="88"
+                   Height="88"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,14"
+                   RenderOptions.BitmapScalingMode="HighQuality">
+                <Image.Effect>
+                    <DropShadowEffect BlurRadius="12"
+                                      Direction="270"
+                                      ShadowDepth="4"
+                                      Opacity="0.28"
+                                      Color="#000000" />
+                </Image.Effect>
+            </Image>
 
-        <!-- 左側アプリアイコン (本家MangaMeeya風) -->
-        <Image Grid.Column="0"
-               Source="pack://application:,,,/Assets/MangaMeYeah.ico"
-               Width="48"
-               Height="48"
-               Margin="0,0,16,0"
-               VerticalAlignment="Center"
-               RenderOptions.BitmapScalingMode="HighQuality" />
-
-        <!-- 右側コンテンツ (センタリング) -->
-        <StackPanel Grid.Column="1"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
-            <!-- 「マンガミーヤー vX.X.X」 -->
+            <!-- アプリ名・バージョン番号 (中央・太字) -->
             <TextBlock x:Name="VersionTextBlock"
                        Text="マンガミーヤー v0.3.5"
-                       FontSize="13"
-                       Foreground="#000000"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#1A1A1A"
                        HorizontalAlignment="Center"
-                       Margin="0,0,0,6" />
+                       Margin="0,0,0,8" />
 
-            <!-- URLリンク -->
+            <!-- GitHub URL リンク (中央・下線付き青文字) -->
             <TextBlock HorizontalAlignment="Center"
-                       Margin="0,0,0,12"
-                       FontSize="12">
+                       FontSize="13"
+                       Margin="0,0,0,18">
                 <Hyperlink NavigateUri="https://github.com/emmmanime/MangaMeYeah"
                            RequestNavigate="Hyperlink_RequestNavigate"
-                           Foreground="#0000FF">
+                           Foreground="#0969DA">
                     https://github.com/emmmanime/MangaMeYeah
                 </Hyperlink>
             </TextBlock>
 
-            <!-- OKボタン (センタリング) -->
+            <!-- OKボタン (中央配置) -->
             <Button Content="OK"
-                    Width="82"
-                    Height="24"
+                    Width="96"
+                    Height="28"
+                    FontSize="12"
                     HorizontalAlignment="Center"
                     IsDefault="True"
                     IsCancel="True"
