@@ -14,18 +14,18 @@ spec.loader.exec_module(gen_icon)
 
 # Letter configuration: (char, scale_multiplier, is_counter_target)
 LETTERS_CONFIG = [
-    ("M", 1.26, False), # Manga M (large)
-    ("a", 1.00, True),  # a
-    ("n", 1.00, False), # n
-    ("g", 1.00, True),  # g
-    ("a", 1.00, True),  # a
-    ("M", 1.26, False), # Me M (large)
-    ("e", 1.00, True),  # e
-    ("Y", 1.28, False), # Yeah Y (large)
-    ("e", 1.00, True),  # e
-    ("a", 1.00, True),  # a
-    ("h", 1.00, False), # h
-    ("!", 1.20, False), # ! (punchy)
+    ("M", 1.26, False), # 0: Manga M (large)
+    ("a", 1.00, True),  # 1: a (outline preserved over M)
+    ("n", 1.00, False), # 2: n
+    ("g", 1.00, True),  # 3: g
+    ("a", 1.00, True),  # 4: a (end of Manga)
+    ("M", 1.26, False), # 5: Me M (large)
+    ("e", 1.00, True),  # 6: e (end of Me)
+    ("Y", 1.28, False), # 7: Yeah Y (large)
+    ("e", 1.00, True),  # 8: e (tucked under Y)
+    ("a", 1.00, True),  # 9: a
+    ("h", 1.00, False), # 10: h
+    ("!", 1.20, False), # 11: ! (punchy)
 ]
 
 def make_gradient(width, height, top_color, bot_color):
@@ -74,17 +74,19 @@ def get_char_counter_holes(char: str, font: ImageFont.FreeTypeFont) -> tuple:
 
 def render_logo(
     base_font_size: int = 140,
-    e_y_kerning: float = 0.68, # Tighter left of Y
-    y_e_kerning: float = 0.62, # Deeper tuck right of Y
+    a_M_adv_ratio: float = 0.96, # 5th 'a' to 'M' (clearly separated, not touching)
+    e_Y_adv_ratio: float = 0.74, # 7th 'e' to 'Y' (balanced to match a-M gap)
+    y_e_adv_ratio: float = 0.62, # 'Y' to 'e' (snugly tucked under Y arm)
     white_stroke_px: int = 24,
     navy_stroke_px: int = 13,
     shadow_offset_px: int = 16,
 ) -> Image.Image:
     """
     Renders official MangaMeYeah! logo with:
+    - 2nd letter 'a' outline preserved on top of 1st letter 'M'
+    - Balanced, clearly separated gaps between words (Manga-Me and Me-Yeah)
     - Version B: Counters filled with white
     - M, M, Y enlarged
-    - Balanced tight kerning with right of Y tucked closely
     - Continuous, unified thick white backing
     - Supersampled 2x
     """
@@ -113,12 +115,14 @@ def render_logo(
 
         if idx == 0:
             kern_adv = char_w * 0.88
+        elif idx == 4: # 5th letter 'a' (end of Manga) before M of Me
+            kern_adv = char_w * a_M_adv_ratio
         elif ch == "M":
             kern_adv = char_w * 0.90
-        elif idx == 6: # e of Me before Y
-            kern_adv = char_w * e_y_kerning
-        elif ch == "Y": # Y before e of Yeah
-            kern_adv = char_w * y_e_kerning
+        elif idx == 6: # 7th letter 'e' (end of Me) before Y of Yeah
+            kern_adv = char_w * e_Y_adv_ratio
+        elif ch == "Y": # 8th letter 'Y' before 'e' of Yeah
+            kern_adv = char_w * y_e_adv_ratio
         elif idx > 0 and LETTERS_CONFIG[idx - 1][0] in ["M"]:
             kern_adv = char_w * 0.78
         elif ch == "!":
@@ -140,9 +144,6 @@ def render_logo(
     total_w = cur_x + margin
     total_h = baseline_y + int(base_sz * 0.7) + margin
 
-    core_mask = Image.new("L", (total_w, total_h), 0)
-    d_core = ImageDraw.Draw(core_mask)
-
     white_mask = Image.new("L", (total_w, total_h), 0)
     d_white = ImageDraw.Draw(white_mask)
 
@@ -158,7 +159,6 @@ def render_logo(
 
         d_navy.text((cx, baseline_y), ch, font=font, stroke_width=w_stroke + n_stroke, fill=255, anchor="ls")
         d_white.text((cx, baseline_y), ch, font=font, stroke_width=w_stroke, fill=255, anchor="ls")
-        d_core.text((cx, baseline_y), ch, font=font, fill=255, anchor="ls")
 
         if item["is_target"]:
             h_local, (ox, oy) = get_char_counter_holes(ch, font)
@@ -173,7 +173,7 @@ def render_logo(
     shadow_mask.paste(navy_mask, (s_offset, int(s_offset * 1.15)))
     shadow_mask = shadow_mask.filter(ImageFilter.GaussianBlur(max(3, int(s_offset * 0.55))))
 
-    # Composite
+    # Composite Canvas
     canvas = Image.new("RGBA", (total_w, total_h), (0, 0, 0, 0))
     shadow_color = (15, 28, 52, 210)
     canvas.paste(Image.new("RGBA", (total_w, total_h), shadow_color), (0, 0), shadow_mask)
@@ -182,14 +182,29 @@ def render_logo(
     canvas.paste(Image.new("RGBA", (total_w, total_h), navy_color), (0, 0), navy_mask)
     canvas.paste(Image.new("RGBA", (total_w, total_h), (255, 255, 255, 255)), (0, 0), white_mask)
 
-    inner_stroke_mask = Image.new("L", (total_w, total_h), 0)
-    d_inner = ImageDraw.Draw(inner_stroke_mask)
-    for item in char_layouts:
-        d_inner.text((item["x"], baseline_y), item["char"], font=item["font"], stroke_width=max(2, int(base_sz * 0.024)), fill=255, anchor="ls")
-    canvas.paste(Image.new("RGBA", (total_w, total_h), navy_color), (0, 0), inner_stroke_mask)
-
+    # Global gradient core
     grad = make_gradient(total_w, total_h, (0, 195, 255, 255), (0, 115, 235, 255))
-    canvas.paste(grad, (0, 0), core_mask)
+
+    # Draw each character LAYERED (left to right)
+    # This ensures letter 1 ('a') has its left navy stroke sitting ON TOP of letter 0 ('M'),
+    # so 'a' outline is 100% visible and never swallowed!
+    inner_stroke_w = max(2, int(base_sz * 0.024))
+    for item in char_layouts:
+        ch = item["char"]
+        font = item["font"]
+        cx = item["x"]
+
+        # Inner stroke of character
+        ch_stroke_mask = Image.new("L", (total_w, total_h), 0)
+        d_chs = ImageDraw.Draw(ch_stroke_mask)
+        d_chs.text((cx, baseline_y), ch, font=font, stroke_width=inner_stroke_w, fill=255, anchor="ls")
+        canvas.paste(Image.new("RGBA", (total_w, total_h), navy_color), (0, 0), ch_stroke_mask)
+
+        # Core blue fill of character
+        ch_fill_mask = Image.new("L", (total_w, total_h), 0)
+        d_chf = ImageDraw.Draw(ch_fill_mask)
+        d_chf.text((cx, baseline_y), ch, font=font, fill=255, anchor="ls")
+        canvas.paste(grad, (0, 0), ch_fill_mask)
 
     out_w = total_w // ss
     out_h = total_h // ss
@@ -203,99 +218,77 @@ def render_logo(
 
 def generate_5to2_banner(logo_img: Image.Image, output_path: str):
     """
-    Creates a 5:2 aspect ratio banner (1500 x 600) for X (Twitter) articles / cards.
-    Contains:
-    - 5:2 ratio (1500 x 600)
-    - "漫" book icon + Refined MangaMeYeah! logo
-    - Catchy, completely safe tagline without mentioning MangaMeeya
-    - Feature badges and version info
+    Creates a clean, versatile 5:2 ratio banner (1500 x 600) for X articles & announcements.
+    - ONLY the "漫" book icon and the official MangaMeYeah! logo.
+    - Icon and Logo have top and bottom aligned (上下を合わせる).
+    - Maximized in size within the 5:2 canvas.
+    - Fully reusable for future releases and posts (no release-specific text).
     """
     W = 1500
-    H = 600  # 1500:600 = 5:2
+    H = 600  # 1500:600 = exactly 5:2 ratio
     banner = Image.new("RGBA", (W, H), (18, 22, 30, 255))
     draw = ImageDraw.Draw(banner)
 
-    # 1. Subtle comic halftone dot grid
+    # 1. Subtle comic halftone dot mesh
     for gx in range(0, W, 36):
         for gy in range(0, H, 36):
             draw.ellipse([gx - 1, gy - 1, gx + 1, gy + 1], fill=(35, 45, 60, 110))
 
-    # 2. Ambient radial glow behind logo
+    # 2. Ambient radial backlight glow centered behind content
     glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     g_draw = ImageDraw.Draw(glow)
-    g_draw.ellipse([W // 2 - 420, H // 2 - 250, W // 2 + 420, H // 2 + 180], fill=(0, 140, 255, 50))
-    glow = glow.filter(ImageFilter.GaussianBlur(90))
+    g_draw.ellipse([W // 2 - 500, H // 2 - 250, W // 2 + 500, H // 2 + 250], fill=(0, 140, 255, 60))
+    glow = glow.filter(ImageFilter.GaussianBlur(100))
     banner.paste(glow, (0, 0), glow)
 
     # 3. Book Icon ("漫")
-    icon_img = gen_icon.draw_icon_canvas(256, "漫")
-    icon_sz = 175
-    icon_resized = icon_img.resize((icon_sz, icon_sz), Image.Resampling.LANCZOS)
+    icon_raw = gen_icon.draw_icon_canvas(512, "漫")
 
-    # 4. Logo sizing
-    # Fit logo harmoniously next to icon
-    logo_scale = 145 / logo_img.height
-    logo_w = int(logo_img.width * logo_scale)
-    logo_h = int(logo_img.height * logo_scale)
-    logo_resized = logo_img.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+    # Target content height: maximize within H=600 with clean balanced margins
+    # We want icon and logo heights to match 1:1 (上下を合わせる)
+    target_content_h = 360  # Leaves 120px top and 120px bottom in 600px height
 
-    spacing = 28
-    header_w = icon_sz + spacing + logo_w
-    header_x = (W - header_w) // 2
-    header_y = 110
+    # Scale icon to target_content_h
+    icon_resized = icon_raw.resize((target_content_h, target_content_h), Image.Resampling.LANCZOS)
 
-    banner.paste(icon_resized, (header_x, header_y + 10), icon_resized)
-    banner.paste(logo_resized, (header_x + icon_sz + spacing, header_y), logo_resized)
+    # Scale logo so its height matches icon height exactly!
+    logo_scale = target_content_h / logo_img.height
+    logo_target_w = int(logo_img.width * logo_scale)
+    logo_resized = logo_img.resize((logo_target_w, target_content_h), Image.Resampling.LANCZOS)
 
-    # 5. Tagline (NO MangaMeeya name mentioned - completely safe!)
-    tagline_font = ImageFont.truetype(font_path, 25)
-    tagline = "サクサク快適に読める、Windows 11 向け新世代高速画像ビューワー"
-    tb = draw.textbbox((0, 0), tagline, font=tagline_font)
-    tw = tb[2] - tb[0]
-    draw.text(((W - tw) // 2, 315), tagline, font=tagline_font, fill=(235, 244, 255, 255))
+    # Gap between icon and logo
+    gap = 40
+    total_content_w = target_content_h + gap + logo_target_w
 
-    # 6. Feature Badges (Pills)
-    badges = ["[高速先読みキャッシュ]", "[ネスト書庫直接展開]", "[X分割画像自動結合]", "[MangaMeYeah.ini対応]", "[ポータブル対応]"]
-    badge_font = ImageFont.truetype(font_path, 16)
-    
-    badge_w_list = []
-    for b in badges:
-        bb = draw.textbbox((0, 0), b, font=badge_font)
-        badge_w_list.append((bb[2] - bb[0]) + 32)
+    # If total_content_w exceeds width with margins (e.g. 1400), scale down slightly
+    max_w = 1420
+    if total_content_w > max_w:
+        ratio = max_w / total_content_w
+        target_content_h = int(target_content_h * ratio)
+        icon_resized = icon_raw.resize((target_content_h, target_content_h), Image.Resampling.LANCZOS)
+        logo_target_w = int(logo_img.width * (target_content_h / logo_img.height))
+        logo_resized = logo_img.resize((logo_target_w, target_content_h), Image.Resampling.LANCZOS)
+        total_content_w = target_content_h + gap + logo_target_w
 
-    gap = 14
-    total_badges_w = sum(badge_w_list) + gap * (len(badges) - 1)
-    bx = (W - total_badges_w) // 2
-    by = 385
+    # Center horizontally and vertically
+    start_x = (W - total_content_w) // 2
+    start_y = (H - target_content_h) // 2
 
-    for idx, b in enumerate(badges):
-        bw = badge_w_list[idx]
-        bh = 38
-        draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=19, fill=(28, 42, 65, 225), outline=(0, 165, 255, 190), width=1)
-        bb = draw.textbbox((0, 0), b, font=badge_font)
-        tx = bx + (bw - (bb[2] - bb[0])) // 2
-        ty = by + (bh - (bb[3] - bb[1])) // 2 - 2
-        draw.text((tx, ty), b, font=badge_font, fill=(240, 248, 255, 255))
-        bx += bw + gap
-
-    # 7. Version & Link footer
-    foot_font = ImageFont.truetype(font_path, 16)
-    foot_text = "v0.3.5 Public Pre-Release  |  github.com/emmmanime/MangaMeYeah"
-    fb = draw.textbbox((0, 0), foot_text, font=foot_font)
-    fw = fb[2] - fb[0]
-    draw.text(((W - fw) // 2, 485), foot_text, font=foot_font, fill=(135, 165, 200, 255))
+    # Paste icon and logo: perfectly aligned top and bottom!
+    banner.paste(icon_resized, (start_x, start_y), icon_resized)
+    banner.paste(logo_resized, (start_x + target_content_h + gap, start_y), logo_resized)
 
     banner.save(output_path, "PNG")
-    print(f"Generated 5:2 Banner: {output_path}")
+    print(f"Generated 5:2 Versatile Banner: {output_path}")
 
 if __name__ == "__main__":
-    print("Generating official refined logo...")
+    print("Generating refined official logo...")
     logo = render_logo()
-    
+
     logo_path = os.path.join(logo_dir, "logo_official_filled.png")
     logo.save(logo_path, "PNG")
     print(f"Saved: {logo_path}")
 
-    # Generate 5:2 ratio banner (1500 x 600)
+    # Generate 5:2 versatile banner (1500 x 600)
     banner_5to2_path = os.path.join(logo_dir, "banner_x_5to2.png")
     generate_5to2_banner(logo, banner_5to2_path)
