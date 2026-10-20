@@ -67,31 +67,10 @@ public partial class ImageInfoWindow : Window
 
     private void ImageInfoWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        switch (e.Key)
+        if (e.Key == System.Windows.Input.Key.Escape)
         {
-            case System.Windows.Input.Key.Home:
-                _mainWindow?.GoToFirstPage();
-                e.Handled = true;
-                break;
-            case System.Windows.Input.Key.End:
-                _mainWindow?.GoToLastPage();
-                e.Handled = true;
-                break;
-            case System.Windows.Input.Key.Left:
-            case System.Windows.Input.Key.PageUp:
-                _mainWindow?.PrevPage();
-                e.Handled = true;
-                break;
-            case System.Windows.Input.Key.Right:
-            case System.Windows.Input.Key.PageDown:
-            case System.Windows.Input.Key.Space:
-                _mainWindow?.NextPage();
-                e.Handled = true;
-                break;
-            case System.Windows.Input.Key.Escape:
-                Close();
-                e.Handled = true;
-                break;
+            Close();
+            e.Handled = true;
         }
     }
 

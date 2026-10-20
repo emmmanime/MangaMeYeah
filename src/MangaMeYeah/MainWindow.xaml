@@ -15,9 +15,9 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         Closing="Window_Closing">
     <Grid>
-        <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,24,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
+        <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,20,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
         <Grid x:Name="ViewerRootGrid"
-              Margin="0,24,0,0"
+              Margin="0,20,0,0"
               Background="#808080"
               ClipToBounds="True"
               Focusable="True"
@@ -466,7 +466,7 @@
         <!-- メインメニューバー (最前面の上部に配置、フルスクリーン時はマウスを上端に寄せるとプルダウン表示) -->
         <Menu x:Name="MainMenuBar"
               VerticalAlignment="Top"
-              Height="24"
+              Height="20"
               Panel.ZIndex="100"
               MouseLeave="MainMenuBar_MouseLeave">
             <MenuItem Header="ファイル(_F)">

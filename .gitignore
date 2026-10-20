@@ -30,3 +30,5 @@ desktop.ini
 MangaMeYeah.ini
 *.ini
 tools/fonts/
+release/
+temp_portable/

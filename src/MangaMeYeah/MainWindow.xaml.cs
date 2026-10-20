@@ -1303,7 +1303,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         else
         {
             ResizeMode = ResizeMode.CanResize;
-            ViewerRootGrid.Margin = new Thickness(0, 24, 0, 0);
+            ViewerRootGrid.Margin = new Thickness(0, 20, 0, 0);
             MainMenuBar.Visibility = Visibility.Visible;
             WindowStyle = _savedWindowStyle;
             WindowState = _savedWindowState;
@@ -1346,7 +1346,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 MainMenuBar.Visibility = Visibility.Visible;
             }
         }
-        else if (mousePosInRoot.Y > 36 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
+        else if (mousePosInRoot.Y > 26 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
         {
             if (MainMenuBar.Visibility == Visibility.Visible)
             {
@@ -1360,7 +1360,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_isFullScreen && _fullScreenMenuMode == 1 && !MainMenuBar.IsKeyboardFocusWithin)
         {
             Point pos = e.GetPosition(ViewerRootGrid);
-            if (pos.Y > 28)
+            if (pos.Y > 20)
             {
                 MainMenuBar.Visibility = Visibility.Collapsed;
             }
@@ -2809,47 +2809,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    private const string HelpOnlineUrl = "https://github.com/emmmanime/MangaMeYeah/blob/main/docs/help/index.md";
+
     private void OpenHelpManual()
     {
         try
         {
-            string baseDir = AppContext.BaseDirectory;
-            string[] searchPaths =
-            [
-                Path.Combine(baseDir, "docs", "help", "index.md"),
-                Path.Combine(baseDir, "..", "..", "..", "..", "docs", "help", "index.md"),
-                Path.Combine(baseDir, "..", "..", "..", "docs", "help", "index.md"),
-                Path.Combine(Directory.GetCurrentDirectory(), "docs", "help", "index.md")
-            ];
-
-            string? helpFile = searchPaths.FirstOrDefault(File.Exists);
-            if (helpFile != null)
+            var psi = new ProcessStartInfo
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = Path.GetFullPath(helpFile),
-                    UseShellExecute = true
-                };
-                Process.Start(psi);
-                ShowOsd("マニュアルを開きました");
-            }
-            else
-            {
-                // Fallback to README
-                string readmePath = Path.Combine(baseDir, "README.md");
-                if (File.Exists(readmePath))
-                {
-                    Process.Start(new ProcessStartInfo { FileName = readmePath, UseShellExecute = true });
-                }
-                else
-                {
-                    ShowOsd("マニュアルファイルが見つかりませんでした");
-                }
-            }
+                FileName = HelpOnlineUrl,
+                UseShellExecute = true
+            };
+            Process.Start(psi);
+            ShowOsd("オンラインヘルプを開きました");
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"マニュアルの表示に失敗しました: {ex.Message}", "ヘルプ", MessageBoxButton.OK, MessageBoxImage.Warning);
+            // オフラインまたはブラウザ起動失敗時のローカルMarkdownフォールバック
+            try
+            {
+                string baseDir = AppContext.BaseDirectory;
+                string[] searchPaths =
+                [
+                    Path.Combine(baseDir, "docs", "help", "index.md"),
+                    Path.Combine(baseDir, "..", "..", "..", "..", "docs", "help", "index.md"),
+                    Path.Combine(baseDir, "..", "..", "..", "docs", "help", "index.md"),
+                    Path.Combine(Directory.GetCurrentDirectory(), "docs", "help", "index.md")
+                ];
+
+                string? helpFile = searchPaths.FirstOrDefault(File.Exists);
+                if (helpFile != null)
+                {
+                    Process.Start(new ProcessStartInfo { FileName = Path.GetFullPath(helpFile), UseShellExecute = true });
+                    ShowOsd("ローカルヘルプを開きました");
+                    return;
+                }
+            }
+            catch { }
+
+            MessageBox.Show(this, $"ヘルプの表示に失敗しました: {ex.Message}", "ヘルプ", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
