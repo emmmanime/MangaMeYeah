@@ -205,39 +205,51 @@ def draw_icon_canvas(size: int, char_text: str) -> Image.Image:
     char_white_rim = (255, 255, 255, 255)  # 白フチ（視認性とポップ感を両立）
     char_shadow = (20, 35, 60, 220)        # ドロップシャドウ
 
-    shadow_dist = max(2, int(W * 0.024))
-    navy_stroke_w = max(2, int(W * 0.046))
-    white_rim_w = max(1, int(W * 0.026))
+    if size <= 16:
+        navy_stroke_w = max(1, int(W * 0.018))
+        white_rim_w = max(1, int(W * 0.008))
+        shadow_dist = 0
+    elif size <= 24:
+        navy_stroke_w = max(1, int(W * 0.025))
+        white_rim_w = max(1, int(W * 0.015))
+        shadow_dist = max(1, int(W * 0.016))
+    else:
+        navy_stroke_w = max(2, int(W * 0.046))
+        white_rim_w = max(1, int(W * 0.026))
+        shadow_dist = max(2, int(W * 0.024))
 
     # A. Character Drop shadow
-    draw.text(
-        (tx + shadow_dist, ty + shadow_dist),
-        char_text,
-        font=font,
-        fill=char_shadow,
-        stroke_width=navy_stroke_w,
-        stroke_fill=char_shadow,
-    )
+    if shadow_dist > 0:
+        draw.text(
+            (tx + shadow_dist, ty + shadow_dist),
+            char_text,
+            font=font,
+            fill=char_shadow,
+            stroke_width=navy_stroke_w,
+            stroke_fill=char_shadow,
+        )
 
     # B. Outer dark navy stroke (ensures bold outline against white backgrounds!)
-    draw.text(
-        (tx, ty),
-        char_text,
-        font=font,
-        fill=char_navy_stroke,
-        stroke_width=navy_stroke_w,
-        stroke_fill=char_navy_stroke,
-    )
+    if navy_stroke_w > 0:
+        draw.text(
+            (tx, ty),
+            char_text,
+            font=font,
+            fill=char_navy_stroke,
+            stroke_width=navy_stroke_w,
+            stroke_fill=char_navy_stroke,
+        )
 
     # C. White accent rim
-    draw.text(
-        (tx, ty),
-        char_text,
-        font=font,
-        fill=char_fill,
-        stroke_width=white_rim_w,
-        stroke_fill=char_white_rim,
-    )
+    if white_rim_w > 0:
+        draw.text(
+            (tx, ty),
+            char_text,
+            font=font,
+            fill=char_fill,
+            stroke_width=white_rim_w,
+            stroke_fill=char_white_rim,
+        )
 
     # D. Final bright blue character body
     draw.text(
@@ -254,7 +266,8 @@ def generate_multi_size_ico(ico_path: str):
     png_blobs = []
 
     for sz in sizes:
-        ch = "漫" if sz >= 32 else "マ"
+        # 正解は絶対に「漫」
+        ch = "漫"
         im = draw_icon_canvas(sz, ch)
         buf = io.BytesIO()
         im.save(buf, format="PNG")
@@ -292,12 +305,13 @@ def generate_multi_size_ico(ico_path: str):
             f.write(p)
     print(f"Generated multi-res ICO: {ico_path}")
 
+    # Also save high-resolution 256x256 PNG for VersionWindow and docs
+    logo_path = os.path.join(os.path.dirname(ico_path), "MangaMeYeah_Logo.png")
+    im256 = draw_icon_canvas(256, "漫")
+    im256.save(logo_path, "PNG")
+    print(f"Generated Logo PNG: {logo_path}")
+
 def generate_preview_comparison(output_png: str):
-    # Preview sheet showing icon on:
-    # 1. Pure White (#FFFFFF) background
-    # 2. Windows 11 Dark Mode Taskbar (#202020) background
-    # 3. Soft Gray (#E5E7EB) background
-    # Across sizes: 256px, 48px, 32px, 24px, 16px (and 16px magnified 4x)
     W = 1000
     H = 680
     sheet = Image.new("RGBA", (W, H), (24, 26, 32, 255))
@@ -314,12 +328,12 @@ def generate_preview_comparison(output_png: str):
     draw.text((30, 20), "MangaMeYeah アイコン新デザイン（C案 RocknRoll One × アール付きブック × 明るい青）", font=title_font, fill=(245, 245, 250, 255))
     draw.text((30, 52), "・MangaMeeya風のページアール（曲面） ＋ アール追従コマ割り ＋ ブルーグレー影 ＋ 白背景対応の濃紺エッジ付き明るい青", font=body_font, fill=(160, 190, 220, 255))
 
-    # Pre-render icons
+    # Pre-render icons: all sizes use 「漫」
     im256 = draw_icon_canvas(256, "漫")
     im48 = draw_icon_canvas(48, "漫")
     im32 = draw_icon_canvas(32, "漫")
-    im24 = draw_icon_canvas(24, "マ")
-    im16 = draw_icon_canvas(16, "マ")
+    im24 = draw_icon_canvas(24, "漫")
+    im16 = draw_icon_canvas(16, "漫")
     im16_mag = im16.resize((64, 64), Image.Resampling.NEAREST)
 
     # 3 Background Test Strips
@@ -350,13 +364,13 @@ def generate_preview_comparison(output_png: str):
         sheet.paste(im32, (340, y0 + 83), im32)
         draw.text((342, y0 + 130), "32px", font=body_font, fill=text_col)
 
-        # 24px (マ)
+        # 24px (漫)
         sheet.paste(im24, (440, y0 + 87), im24)
-        draw.text((440, y0 + 130), "24px「マ」", font=body_font, fill=text_col)
+        draw.text((440, y0 + 130), "24px「漫」", font=body_font, fill=text_col)
 
-        # 16px (マ)
+        # 16px (漫)
         sheet.paste(im16, (550, y0 + 91), im16)
-        draw.text((545, y0 + 130), "16px「マ」", font=body_font, fill=text_col)
+        draw.text((545, y0 + 130), "16px「漫」", font=body_font, fill=text_col)
 
         # 16px 4x Magnified
         sheet.paste(im16_mag, (660, y0 + 59), im16_mag)
@@ -368,3 +382,4 @@ def generate_preview_comparison(output_png: str):
 if __name__ == "__main__":
     generate_multi_size_ico(ico_target)
     generate_preview_comparison(preview_target)
+

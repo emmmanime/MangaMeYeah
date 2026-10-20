@@ -14,7 +14,7 @@
     <Grid Margin="32,24,32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <!-- アプリアイコン (中央・シャドウ付き) -->
-            <Image Source="pack://application:,,,/Assets/MangaMeYeah.ico"
+            <Image Source="pack://application:,,,/Assets/MangaMeYeah_Logo.png"
                    Width="88"
                    Height="88"
                    HorizontalAlignment="Center"
