@@ -27,4 +27,6 @@ desktop.ini
 *.local.json
 *.local.ini
 *.settings.json
+MangaMeYeah.ini
+*.ini
 tools/fonts/

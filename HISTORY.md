@@ -4,6 +4,18 @@
 
 ---
 
+## [0.3.5] - 2026-10-20
+
+### 新機能・機能改善 (Added / Improved)
+- **設定保存形式の `MangaMeYeah.ini` 化と完全自動マイグレーション**
+  - 設定の保存形式を JSON（`MangaMeYeah.settings.json`）から、MangaMeeya 互換の INI ファイル形式 **`MangaMeYeah.ini`** へ移行。
+  - **UTF-8（BOMなし）エンコーディング採用**: 日本語フォルダー名、Unicode、特殊記号、絵文字等が含まれるパスも文字化けすることなく安全に読み書き可能。
+  - **既存設定のシームレス自動マイグレーション**: 既存の `MangaMeYeah.settings.json` が存在する場合、起動時に自動的に読み込んで `MangaMeYeah.ini` に変換・引継ぎ保存。レジューム（閲覧履歴）やクイックセーブ先、ウィンドウ位置等も欠落することなく100%継承。
+  - **MangaMeeya 互換キー体系のサポート**: `[Config]`, `[Cache]`, `[Loupe]`, `[BG]`, `[BG2]`, `[Thumbnail]`, `[QuickSave1]`〜`[QuickSave4]`, `[Resume]` など、MangaMeeya ユーザーに親しみやすく、テキストエディタでも直感的に直接編集可能な構造を実現。
+  - MangaMeeya（`C:\win32\MangaMeeya_74b\MangaMeeya.ini`）からの初期インポートにも対応。
+
+---
+
 ## [0.3.4] - 2026-10-20
 
 ### 新機能・機能改善 (Added / Improved)
