@@ -100,6 +100,9 @@ public partial class PreferencesWindow : Window
         ResizeCacheCheck.IsChecked = _settings.ResizeCacheEnabled;
         PreloadForwardTextBox.Text = _settings.PreloadForwardCount.ToString();
         PreloadBackwardTextBox.Text = _settings.PreloadBackwardCount.ToString();
+        PreloadRatioTextBox.Text = _settings.PreloadRatioPercent.ToString();
+        PreloadPrioritySlider.Value = Math.Clamp(_settings.PreloadThreadPriority, 0, 4);
+        UpdatePreloadPriorityLabel((int)PreloadPrioritySlider.Value);
         CacheMemoryLimitTextBox.Text = _settings.CacheMemoryLimitMb.ToString();
     }
 
@@ -190,12 +193,37 @@ public partial class PreferencesWindow : Window
             _settings.PreloadForwardCount = Math.Clamp(pf, 0, 100);
         if (int.TryParse(PreloadBackwardTextBox.Text, out int pb))
             _settings.PreloadBackwardCount = Math.Clamp(pb, 0, 100);
+        if (int.TryParse(PreloadRatioTextBox.Text, out int pr))
+            _settings.PreloadRatioPercent = Math.Clamp(pr, 10, 100);
+        _settings.PreloadThreadPriority = (int)PreloadPrioritySlider.Value;
         if (int.TryParse(CacheMemoryLimitTextBox.Text, out int memMb))
             _settings.CacheMemoryLimitMb = Math.Clamp(memMb, 0, 65536);
 
         _settings.Save();
         _onApplied();
         ApplyButton.IsEnabled = false;
+    }
+
+    private void PreloadPrioritySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (PreloadPriorityLabel == null) return;
+        int val = (int)Math.Round(e.NewValue);
+        UpdatePreloadPriorityLabel(val);
+        SettingControl_Changed(sender, e);
+    }
+
+    private void UpdatePreloadPriorityLabel(int priority)
+    {
+        if (PreloadPriorityLabel == null) return;
+        PreloadPriorityLabel.Text = priority switch
+        {
+            0 => "(最低: UI最優先・CPU負荷抑制)",
+            1 => "(やや低)",
+            2 => "(通常: デフォルト)",
+            3 => "(やや高)",
+            4 => "(最高: 先読み最優先)",
+            _ => "(通常)"
+        };
     }
 
     private void SettingControl_Changed(object sender, RoutedEventArgs e)

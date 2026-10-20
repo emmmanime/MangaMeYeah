@@ -505,6 +505,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             OpenThumbnailView(0, _settings.CustomThumbnailSize);
         }
+
+        _cachedForFolderPath = null;
+        UpdateSiblingFolderCache();
     }
 
     private void EvaluateConnectedImagesForCurrentIndex()
@@ -756,6 +759,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             UpdateWindowTitle(indices, entries);
             UpdateMenuCheckStates();
 
+            if (_imageInfoWindow != null && _imageInfoWindow.IsLoaded)
+            {
+                EnsureColorCountsForCurrentSlots();
+                _imageInfoWindow.UpdateSlots(_currentDisplayedSlots, _currentGridRows, _currentGridCols);
+            }
+
             ImageScrollViewer.ScrollToTop();
             ImageScrollViewer.ScrollToHorizontalOffset(0);
 
@@ -998,7 +1007,58 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     #region ページ移動・フォルダ移動・表示切替・フルスクリーンメニュー制御
 
-    private void NextPage()
+    private bool _isTransitioningFolder = false;
+    private string? _cachedNextSiblingFolder;
+    private string? _cachedPrevSiblingFolder;
+    private string? _cachedForFolderPath;
+
+    private void UpdateSiblingFolderCache()
+    {
+        if (string.IsNullOrEmpty(_currentFolderPath) || _currentFolderPath == _cachedForFolderPath)
+        {
+            return;
+        }
+        string targetPath = _currentFolderPath;
+        _cachedForFolderPath = targetPath;
+        Task.Run(() =>
+        {
+            try
+            {
+                string? next = ImageFolderService.GetSiblingFolder(targetPath, +1, _settings.FolderSort);
+                string? prev = ImageFolderService.GetSiblingFolder(targetPath, -1, _settings.FolderSort);
+                if (_currentFolderPath == targetPath)
+                {
+                    _cachedNextSiblingFolder = next;
+                    _cachedPrevSiblingFolder = prev;
+                }
+            }
+            catch { }
+        });
+    }
+
+    public void GoToFirstPage()
+    {
+        if (_imageFiles.Count > 0)
+        {
+            _forcedTwoPageIndex = -1;
+            _currentIndex = 0;
+            RenderCurrentPage();
+            ShowOsd("先頭ページ");
+        }
+    }
+
+    public void GoToLastPage()
+    {
+        if (_imageFiles.Count > 0)
+        {
+            _forcedTwoPageIndex = -1;
+            _currentIndex = _imageFiles.Count - 1;
+            RenderCurrentPage();
+            ShowOsd("最終ページ");
+        }
+    }
+
+    internal void NextPage()
     {
         if (_imageFiles.Count == 0) return;
         int step = Math.Max(1, _lastDisplayedPageCount * Math.Max(1, _settings.StepNextPrevCount));
@@ -1011,39 +1071,65 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            // 最終ページに達したら親フォルダ内の次のフォルダへ自動移行 (フォルダソート順)
-            string? nextFolder = !string.IsNullOrEmpty(_currentFolderPath)
-                ? ImageFolderService.GetSiblingFolder(_currentFolderPath, +1, _settings.FolderSort)
-                : null;
-            if (nextFolder != null)
+            if (_isTransitioningFolder) return;
+            _isTransitioningFolder = true;
+
+            try
             {
-                OpenPath(nextFolder, openAtLastPage: false);
-                ShowOsd($"次のフォルダへ移動: {Path.GetFileName(nextFolder)}");
+                string? nextFolder = _cachedNextSiblingFolder ?? (!string.IsNullOrEmpty(_currentFolderPath)
+                    ? ImageFolderService.GetSiblingFolder(_currentFolderPath, +1, _settings.FolderSort)
+                    : null);
+
+                if (nextFolder != null)
+                {
+                    ShowOsd($"次のフォルダへ移動中: {Path.GetFileName(nextFolder)}");
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    OpenPath(nextFolder, openAtLastPage: false);
+                    ShowOsd($"フォルダ移動: {Path.GetFileName(nextFolder)}");
+                }
+                else
+                {
+                    ShowOsd("最終ページです (次のフォルダはありません)");
+                }
             }
-            else
+            finally
             {
-                ShowOsd("最終ページです");
+                Mouse.OverrideCursor = null;
+                _isTransitioningFolder = false;
             }
         }
     }
 
-    private void PrevPage()
+    internal void PrevPage()
     {
         if (_imageFiles.Count == 0) return;
         if (_currentIndex <= 0)
         {
-            // 先頭ページでさらに戻った場合は親フォルダ内の前のフォルダの最終ページへ自動移行
-            string? prevFolder = !string.IsNullOrEmpty(_currentFolderPath)
-                ? ImageFolderService.GetSiblingFolder(_currentFolderPath, -1, _settings.FolderSort)
-                : null;
-            if (prevFolder != null)
+            if (_isTransitioningFolder) return;
+            _isTransitioningFolder = true;
+
+            try
             {
-                OpenPath(prevFolder, openAtLastPage: true);
-                ShowOsd($"前のフォルダへ移動: {Path.GetFileName(prevFolder)}");
+                string? prevFolder = _cachedPrevSiblingFolder ?? (!string.IsNullOrEmpty(_currentFolderPath)
+                    ? ImageFolderService.GetSiblingFolder(_currentFolderPath, -1, _settings.FolderSort)
+                    : null);
+
+                if (prevFolder != null)
+                {
+                    ShowOsd($"前のフォルダへ移動中: {Path.GetFileName(prevFolder)}");
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    OpenPath(prevFolder, openAtLastPage: true);
+                    ShowOsd($"フォルダ移動: {Path.GetFileName(prevFolder)}");
+                }
+                else
+                {
+                    ShowOsd("先頭ページです (前のフォルダはありません)");
+                }
             }
-            else
+            finally
             {
-                ShowOsd("先頭ページです");
+                Mouse.OverrideCursor = null;
+                _isTransitioningFolder = false;
             }
             return;
         }
@@ -1125,16 +1211,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void MoveToSiblingFolder(int offset)
     {
-        if (string.IsNullOrEmpty(_currentFolderPath)) return;
-        string? nextFolder = ImageFolderService.GetSiblingFolder(_currentFolderPath, offset, _settings.FolderSort);
-        if (nextFolder != null)
+        if (string.IsNullOrEmpty(_currentFolderPath) || _isTransitioningFolder) return;
+        _isTransitioningFolder = true;
+        try
         {
-            OpenPath(nextFolder);
-            ShowOsd($"フォルダ移動: {Path.GetFileName(nextFolder)}");
+            string? targetFolder = offset > 0
+                ? (_cachedNextSiblingFolder ?? ImageFolderService.GetSiblingFolder(_currentFolderPath, +1, _settings.FolderSort))
+                : (_cachedPrevSiblingFolder ?? ImageFolderService.GetSiblingFolder(_currentFolderPath, -1, _settings.FolderSort));
+
+            if (targetFolder != null)
+            {
+                ShowOsd(offset > 0 ? $"次のフォルダへ移動中: {Path.GetFileName(targetFolder)}" : $"前のフォルダへ移動中: {Path.GetFileName(targetFolder)}");
+                Mouse.OverrideCursor = Cursors.Wait;
+                OpenPath(targetFolder, openAtLastPage: offset < 0);
+                ShowOsd($"フォルダ移動: {Path.GetFileName(targetFolder)}");
+            }
+            else
+            {
+                ShowOsd(offset > 0 ? "次のフォルダはありません" : "前のフォルダはありません");
+            }
         }
-        else
+        finally
         {
-            ShowOsd(offset > 0 ? "次のフォルダはありません" : "前のフォルダはありません");
+            Mouse.OverrideCursor = null;
+            _isTransitioningFolder = false;
         }
     }
 
@@ -2173,11 +2273,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     e.Handled = true;
                     break;
                 case Key.Home:
-                    if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = 0; RenderCurrentPage(); ShowOsd("先頭ページ"); }
+                    GoToFirstPage();
                     e.Handled = true;
                     break;
                 case Key.End:
-                    if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = _imageFiles.Count - 1; RenderCurrentPage(); ShowOsd("最終ページ"); }
+                    GoToLastPage();
                     e.Handled = true;
                     break;
                 case Key.Space:
@@ -2647,15 +2747,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void ShowImageInfoDialog()
-    {
-        if (_imageFiles.Count == 0 || _currentDisplayedSlots.Count == 0)
-        {
-            MessageBox.Show(this, "画像が開かれていません。", "画像情報", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
+    private ImageInfoWindow? _imageInfoWindow;
 
-        // 必要な場合のみ画像情報ダイアログ表示時に使用色数をオンデマンド計算 (通常閲覧時の負荷ゼロ化)
+    private void EnsureColorCountsForCurrentSlots()
+    {
         foreach (var slot in _currentDisplayedSlots)
         {
             if (slot.Entry.UniqueColorCount == 0)
@@ -2664,12 +2759,31 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 slot.Entry = withColors;
             }
         }
+    }
 
-        var dlg = new ImageInfoWindow(_currentDisplayedSlots, _currentGridRows, _currentGridCols)
+    private void ShowImageInfoDialog()
+    {
+        if (_imageFiles.Count == 0 || _currentDisplayedSlots.Count == 0)
+        {
+            MessageBox.Show(this, "画像が開かれていません。", "画像情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        EnsureColorCountsForCurrentSlots();
+
+        if (_imageInfoWindow != null && _imageInfoWindow.IsLoaded)
+        {
+            _imageInfoWindow.Activate();
+            _imageInfoWindow.UpdateSlots(_currentDisplayedSlots, _currentGridRows, _currentGridCols);
+            return;
+        }
+
+        _imageInfoWindow = new ImageInfoWindow(_currentDisplayedSlots, _currentGridRows, _currentGridCols, this)
         {
             Owner = this
         };
-        dlg.ShowDialog();
+        _imageInfoWindow.Closed += (_, _) => _imageInfoWindow = null;
+        _imageInfoWindow.Show();
     }
 
     private void ShowCacheInfoDialog()

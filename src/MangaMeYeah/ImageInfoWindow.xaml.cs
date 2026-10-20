@@ -20,9 +20,26 @@ public sealed class DisplayedSlotInfo
 
 public partial class ImageInfoWindow : Window
 {
-    public ImageInfoWindow(IReadOnlyList<DisplayedSlotInfo> slots, int totalRows, int totalColumns)
+    private readonly MainWindow? _mainWindow;
+
+    public ImageInfoWindow(
+        IReadOnlyList<DisplayedSlotInfo> slots,
+        int totalRows,
+        int totalColumns,
+        MainWindow? mainWindow = null)
     {
         InitializeComponent();
+        _mainWindow = mainWindow;
+
+        UpdateSlots(slots, totalRows, totalColumns);
+        PreviewKeyDown += ImageInfoWindow_PreviewKeyDown;
+    }
+
+    public void UpdateSlots(IReadOnlyList<DisplayedSlotInfo> slots, int totalRows, int totalColumns)
+    {
+        InfoLayoutGrid.Children.Clear();
+        InfoLayoutGrid.RowDefinitions.Clear();
+        InfoLayoutGrid.ColumnDefinitions.Clear();
 
         int rows = Math.Max(1, totalRows);
         int cols = Math.Max(1, totalColumns);
@@ -45,33 +62,36 @@ public partial class ImageInfoWindow : Window
             _ => 220
         };
 
-        // 再帰処理で1枚ずつ配置セルへ振り分けてダイアログを構築
         PopulateSlotGridRecursive(slots, 0, InfoLayoutGrid, valueColWidth);
-
-        PreviewKeyDown += ImageInfoWindow_PreviewKeyDown;
     }
 
     private void ImageInfoWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key == System.Windows.Input.Key.Home)
+        switch (e.Key)
         {
-            if (System.Windows.Input.Keyboard.FocusedElement is TextBox tb)
-            {
-                tb.CaretIndex = 0;
-                tb.ScrollToHorizontalOffset(0);
-                tb.ScrollToHome();
+            case System.Windows.Input.Key.Home:
+                _mainWindow?.GoToFirstPage();
                 e.Handled = true;
-            }
-        }
-        else if (e.Key == System.Windows.Input.Key.End)
-        {
-            if (System.Windows.Input.Keyboard.FocusedElement is TextBox tb)
-            {
-                tb.CaretIndex = tb.Text.Length;
-                tb.ScrollToHorizontalOffset(double.MaxValue);
-                tb.ScrollToEnd();
+                break;
+            case System.Windows.Input.Key.End:
+                _mainWindow?.GoToLastPage();
                 e.Handled = true;
-            }
+                break;
+            case System.Windows.Input.Key.Left:
+            case System.Windows.Input.Key.PageUp:
+                _mainWindow?.PrevPage();
+                e.Handled = true;
+                break;
+            case System.Windows.Input.Key.Right:
+            case System.Windows.Input.Key.PageDown:
+            case System.Windows.Input.Key.Space:
+                _mainWindow?.NextPage();
+                e.Handled = true;
+                break;
+            case System.Windows.Input.Key.Escape:
+                Close();
+                e.Handled = true;
+                break;
         }
     }
 

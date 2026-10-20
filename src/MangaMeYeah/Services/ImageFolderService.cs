@@ -357,30 +357,32 @@ public static class ImageFolderService
         return null;
     }
 
-    public static bool HasAnySupportedImages(string dirPath, bool includeArchives = true)
+    public static bool HasAnySupportedImages(string dirPath, bool includeArchives = true, int maxDepth = 2)
     {
+        if (maxDepth < 0) return false;
         try
         {
-            if (Directory.EnumerateFiles(dirPath).Any(IsSupportedImageFile))
+            foreach (string file in Directory.EnumerateFiles(dirPath))
             {
-                return true;
-            }
-
-            if (includeArchives && Directory.EnumerateFiles(dirPath).Any(ArchiveImageService.IsArchiveFile))
-            {
-                return true;
-            }
-
-            foreach (string sub in Directory.EnumerateDirectories(dirPath))
-            {
-                string dirName = Path.GetFileName(sub);
-                if (dirName.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) || dirName.StartsWith('.'))
-                {
-                    continue;
-                }
-                if (HasAnySupportedImages(sub, includeArchives))
+                if (IsSupportedImageFile(file) || (includeArchives && ArchiveImageService.IsArchiveFile(file)))
                 {
                     return true;
+                }
+            }
+
+            if (maxDepth > 0)
+            {
+                foreach (string sub in Directory.EnumerateDirectories(dirPath))
+                {
+                    string dirName = Path.GetFileName(sub);
+                    if (dirName.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) || dirName.StartsWith('.'))
+                    {
+                        continue;
+                    }
+                    if (HasAnySupportedImages(sub, includeArchives, maxDepth - 1))
+                    {
+                        return true;
+                    }
                 }
             }
         }

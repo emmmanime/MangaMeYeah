@@ -165,6 +165,8 @@ public class ViewerSettings
     public bool PreloadEnabled { get; set; } = true;
     public int PreloadForwardCount { get; set; } = 4;
     public int PreloadBackwardCount { get; set; } = 4;
+    public int PreloadRatioPercent { get; set; } = 75; // ファイルキャッシュ先読み割合 (%)
+    public int PreloadThreadPriority { get; set; } = 2; // 先読みスレッド優先度: 0=最低, 1=やや低, 2=通常, 3=やや高, 4=最高
     public int CacheMemoryLimitMb { get; set; } = 2048;
 
     // サムネイル設定

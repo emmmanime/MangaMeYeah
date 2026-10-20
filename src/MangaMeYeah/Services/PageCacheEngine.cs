@@ -150,6 +150,19 @@ public sealed class PageCacheEngine : IDisposable
 
         Task.Run(() =>
         {
+            try
+            {
+                Thread.CurrentThread.Priority = settings.PreloadThreadPriority switch
+                {
+                    0 => ThreadPriority.Lowest,
+                    1 => ThreadPriority.BelowNormal,
+                    3 => ThreadPriority.AboveNormal,
+                    4 => ThreadPriority.Highest,
+                    _ => ThreadPriority.Normal
+                };
+            }
+            catch { }
+
             foreach (int idx in indicesToPreload)
             {
                 if (token.IsCancellationRequested) break;

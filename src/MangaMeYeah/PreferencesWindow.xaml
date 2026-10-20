@@ -415,15 +415,17 @@
                                            Foreground="#335588"
                                            FontSize="11.5"
                                            Margin="0,0,0,6" />
-                                <WrapPanel IsEnabled="False" Margin="0,2,0,4">
+                                <WrapPanel Margin="0,2,0,4">
                                     <TextBlock Text="ファイルキャッシュ先読み割合" Width="155" VerticalAlignment="Center" />
-                                    <TextBox Width="52" Text="75" />
+                                    <TextBox x:Name="PreloadRatioTextBox" Width="52" Text="75" VerticalContentAlignment="Center" TextChanged="SettingControl_Changed" />
                                     <TextBlock Text="%" VerticalAlignment="Center" Margin="6,0,0,0" />
                                 </WrapPanel>
-                                <WrapPanel IsEnabled="False">
+                                <WrapPanel Margin="0,2,0,4">
                                     <TextBlock Text="先読みスレッド優先度   低" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                    <Slider Width="140" Minimum="0" Maximum="4" Value="1" />
-                                    <TextBlock Text="高" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    <Slider x:Name="PreloadPrioritySlider" Width="140" Minimum="0" Maximum="4" Value="2"
+                                            IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="PreloadPrioritySlider_ValueChanged" />
+                                    <TextBlock Text="高" VerticalAlignment="Center" Margin="8,0,8,0" />
+                                    <TextBlock x:Name="PreloadPriorityLabel" Text="(通常)" Foreground="#335588" VerticalAlignment="Center" />
                                 </WrapPanel>
                             </StackPanel>
                         </GroupBox>
