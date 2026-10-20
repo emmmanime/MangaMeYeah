@@ -259,7 +259,7 @@ def generate_social_banner(output_path: str):
 
     # 3. Subtitle / Tagline
     tagline_font = ImageFont.truetype(font_path, 26)
-    tagline = "伝説の超高速ビューワー MangaMeeya の魂を受け継ぐ、新世代コミックビューワー"
+    tagline = "伝説の超高速ビューアー MangaMeeya の魂を受け継ぐ、新世代コミックビューアー"
     tb = draw.textbbox((0, 0), tagline, font=tagline_font)
     tw = tb[2] - tb[0]
     draw.text(((W - tw) // 2, 350), tagline, font=tagline_font, fill=(230, 240, 255, 255))

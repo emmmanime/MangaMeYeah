@@ -182,8 +182,8 @@ def render_logo(
     canvas.paste(Image.new("RGBA", (total_w, total_h), navy_color), (0, 0), navy_mask)
     canvas.paste(Image.new("RGBA", (total_w, total_h), (255, 255, 255, 255)), (0, 0), white_mask)
 
-    # Global gradient core
-    grad = make_gradient(total_w, total_h, (0, 195, 255, 255), (0, 115, 235, 255))
+    # Exact same blue as book icon: (0, 140, 245, 255)
+    blue_core = Image.new("RGBA", (total_w, total_h), (0, 140, 245, 255))
 
     # Draw each character LAYERED (left to right)
     # This ensures letter 1 ('a') has its left navy stroke sitting ON TOP of letter 0 ('M'),
@@ -200,11 +200,11 @@ def render_logo(
         d_chs.text((cx, baseline_y), ch, font=font, stroke_width=inner_stroke_w, fill=255, anchor="ls")
         canvas.paste(Image.new("RGBA", (total_w, total_h), navy_color), (0, 0), ch_stroke_mask)
 
-        # Core blue fill of character
+        # Core blue fill of character (exact icon color)
         ch_fill_mask = Image.new("L", (total_w, total_h), 0)
         d_chf = ImageDraw.Draw(ch_fill_mask)
         d_chf.text((cx, baseline_y), ch, font=font, fill=255, anchor="ls")
-        canvas.paste(grad, (0, 0), ch_fill_mask)
+        canvas.paste(blue_core, (0, 0), ch_fill_mask)
 
     out_w = total_w // ss
     out_h = total_h // ss
