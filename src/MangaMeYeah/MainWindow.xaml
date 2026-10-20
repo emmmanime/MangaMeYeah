@@ -721,6 +721,8 @@
                 <MenuItem Uid="MAIN_124" Header="環境設定(_C)..." Tag="環境設定" Click="MenuItem_Click" />
             </MenuItem>
             <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="マニュアル・操作説明(_M)..." InputGestureText="F1" Click="HelpManualMenuItem_Click" />
+                <Separator />
                 <MenuItem Uid="MAIN_114" Header="画像情報(_I)..." Tag="画像情報" Click="MenuItem_Click" />
                 <MenuItem Uid="MAIN_40004" Header="キャッシュ情報(_C)..." Tag="キャッシュ情報" Click="MenuItem_Click" />
                 <Separator />

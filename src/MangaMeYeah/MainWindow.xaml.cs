@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -2280,6 +2281,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     GoToLastPage();
                     e.Handled = true;
                     break;
+                case Key.F1:
+                    OpenHelpManual();
+                    e.Handled = true;
+                    break;
                 case Key.Space:
                     TogglePageMode();
                     e.Handled = true;
@@ -2796,6 +2801,56 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             $"キャッシュヒット数: {_cacheEngine.CacheHits} 回 (ミス: {_cacheEngine.CacheMisses} 回)";
 
         MessageBox.Show(this, msg, "キャッシュ情報", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void HelpManualMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        OpenHelpManual();
+        e.Handled = true;
+    }
+
+    private void OpenHelpManual()
+    {
+        try
+        {
+            string baseDir = AppContext.BaseDirectory;
+            string[] searchPaths =
+            [
+                Path.Combine(baseDir, "docs", "help", "index.md"),
+                Path.Combine(baseDir, "..", "..", "..", "..", "docs", "help", "index.md"),
+                Path.Combine(baseDir, "..", "..", "..", "docs", "help", "index.md"),
+                Path.Combine(Directory.GetCurrentDirectory(), "docs", "help", "index.md")
+            ];
+
+            string? helpFile = searchPaths.FirstOrDefault(File.Exists);
+            if (helpFile != null)
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = Path.GetFullPath(helpFile),
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
+                ShowOsd("マニュアルを開きました");
+            }
+            else
+            {
+                // Fallback to README
+                string readmePath = Path.Combine(baseDir, "README.md");
+                if (File.Exists(readmePath))
+                {
+                    Process.Start(new ProcessStartInfo { FileName = readmePath, UseShellExecute = true });
+                }
+                else
+                {
+                    ShowOsd("マニュアルファイルが見つかりませんでした");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"マニュアルの表示に失敗しました: {ex.Message}", "ヘルプ", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void VersionMenuItem_Click(object sender, RoutedEventArgs e)

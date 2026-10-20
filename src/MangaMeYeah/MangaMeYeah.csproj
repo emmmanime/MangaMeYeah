@@ -21,4 +21,8 @@
     <PackageReference Include="SharpCompress" Version="0.50.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\docs\help\**\*" Link="docs\help\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
