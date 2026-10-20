@@ -30,8 +30,6 @@
                 Height="26"
                 Margin="0,8,0,0"
                 HorizontalAlignment="Center"
-                IsDefault="True"
-                IsCancel="True"
                 Click="OkButton_Click" />
     </Grid>
 </Window>

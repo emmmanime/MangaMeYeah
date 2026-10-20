@@ -244,6 +244,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
         }
 
+        _currentSortMode = _settings.FileSort;
         ApplyRuntimePreferences();
 
         // コンテキストメニューの自動表示を抑止し、MangaMeeya仕様の右クリック動作と両立させる
@@ -376,11 +377,60 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private int GetLastPageGroupStartIndex()
+    {
+        int count = _imageFiles.Count;
+        if (count <= 1) return 0;
+
+        // 1. 自動連結検出が有効な場合、末尾に到達する連結グループ（4枚、3枚、2枚）の開始位置を検出
+        if (_settings.AutoDetectConnectedImages)
+        {
+            if (count >= 4)
+            {
+                var g4 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, count - 4, _cacheEngine, _settings);
+                if (g4 != null && g4.ImageCount == 4) return count - 4;
+            }
+            if (count >= 3)
+            {
+                var g3 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, count - 3, _cacheEngine, _settings);
+                if (g3 != null && g3.ImageCount == 3) return count - 3;
+            }
+            if (count >= 2)
+            {
+                var g2 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, count - 2, _cacheEngine, _settings);
+                if (g2 != null && g2.ImageCount == 2) return count - 2;
+            }
+        }
+
+        // 2. 表示モードに応じた末尾グループの開始位置
+        if (_settings.PageMode is PageDisplayMode.TwoPage or PageDisplayMode.AutoSpread)
+        {
+            if (count >= 2 && ShouldDisplayTwoPages(count - 2))
+            {
+                return count - 2;
+            }
+        }
+        else if (_settings.PageMode is PageDisplayMode.Horizontal4 or PageDisplayMode.Vertical4 or PageDisplayMode.Grid2x2)
+        {
+            if (count >= 4) return count - 4;
+        }
+        else if (_settings.PageMode is PageDisplayMode.Horizontal3 or PageDisplayMode.Vertical3)
+        {
+            if (count >= 3) return count - 3;
+        }
+        else if (_settings.PageMode is PageDisplayMode.Vertical2)
+        {
+            if (count >= 2) return count - 2;
+        }
+
+        return count - 1;
+    }
+
     private int DetermineInitialIndex(string locationKey, bool openAtLastPage)
     {
         if (openAtLastPage && _imageFiles.Count > 0)
         {
-            return _imageFiles.Count - 1;
+            return GetLastPageGroupStartIndex();
         }
 
         if (_settings.ResumePagePerLocation.TryGetValue(locationKey, out string? lastFile) && !string.IsNullOrEmpty(lastFile))
@@ -1053,7 +1103,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_imageFiles.Count > 0)
         {
             _forcedTwoPageIndex = -1;
-            _currentIndex = _imageFiles.Count - 1;
+            _currentIndex = GetLastPageGroupStartIndex();
             RenderCurrentPage();
             ShowOsd("最終ページ");
         }
@@ -2416,7 +2466,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     40107 => _settings.ShrinkOnly,
                     >= 351 and <= 357 => (int)_settings.Filter == id,
                     40019 => _settings.PreloadEnabled,
-                    >= 400 and <= 412 => (int)_currentSortMode == id,
+                    >= 400 and <= 418 => (int)_currentSortMode == id,
                     >= 344 and <= 349 => (int)_settings.FolderSort == id,
                     _ => null
                 };
@@ -2648,8 +2698,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 UpdateMenuCheckStates();
                 ShowOsd(_settings.PreloadEnabled ? "ファイル先読み: ON" : "ファイル先読み: OFF");
                 return;
-            case >= 400 and <= 412:
+            case >= 400 and <= 418:
                 _currentSortMode = (FileSortMode)menuId;
+                _settings.FileSort = _currentSortMode;
+                _settings.Save();
                 UpdateMenuCheckStates();
                 if (_imageFiles.Count > 0)
                 {
@@ -2664,6 +2716,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             case >= 344 and <= 349:
                 _settings.FolderSort = (FolderSortMode)menuId;
+                _settings.Save();
                 UpdateMenuCheckStates();
                 ShowOsd($"フォルダソート変更: {menuItem.Tag}");
                 return;
@@ -2787,6 +2840,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Owner = this
         };
+        _imageInfoWindow.Closing += (_, _) => _imageInfoWindow = null;
         _imageInfoWindow.Closed += (_, _) => _imageInfoWindow = null;
         _imageInfoWindow.Show();
     }

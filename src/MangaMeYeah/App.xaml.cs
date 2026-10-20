@@ -16,6 +16,12 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        DispatcherUnhandledException += (s, args) =>
+        {
+            MessageBox.Show($"予期せぬエラーが発生しました:\n{args.Exception.Message}\n\n{args.Exception.StackTrace}", "MangaMeYeah エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+
         var settings = ViewerSettings.Load();
         if (settings.PreventMultipleInstances)
         {
