@@ -543,7 +543,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _currentDisplayedSlots = [];
             EmptyStatePanel.Visibility = Visibility.Visible;
             PageCanvasGrid.Children.Clear();
-            Title = $"MangaMeYeah - [{Path.GetFileName(_currentFolderPath)}] (画像なし)";
+            Title = $"MangaMeYeah! - [{Path.GetFileName(_currentFolderPath)}] (画像なし)";
             ShowOsd("対応する画像ファイルが見つかりませんでした");
             UpdateMenuCheckStates();
             return;
@@ -1044,13 +1044,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (indices.Count == 1)
         {
             var e = entries[0];
-            Title = $"MangaMeYeah - [{folderName}] ({indices[0] + 1}/{_imageFiles.Count}) {GetDisplayFileName(e.FilePath)} [{e.OriginalWidth}x{e.OriginalHeight}]";
+            Title = $"MangaMeYeah! - [{folderName}] ({indices[0] + 1}/{_imageFiles.Count}) {GetDisplayFileName(e.FilePath)} [{e.OriginalWidth}x{e.OriginalHeight}]";
         }
         else if (indices.Count > 1)
         {
             string rangeStr = $"{indices[0] + 1}-{indices[^1] + 1}/{_imageFiles.Count}";
             string names = string.Join(" / ", entries.Select(e => GetDisplayFileName(e.FilePath)));
-            Title = $"MangaMeYeah - [{folderName}] ({rangeStr}) {names}";
+            Title = $"MangaMeYeah! - [{folderName}] ({rangeStr}) {names}";
         }
     }
 
@@ -2517,7 +2517,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 _imageFiles.Clear();
                 _cacheEngine.Clear();
                 RenderCurrentPage();
-                Title = "MangaMeYeah";
+                Title = "MangaMeYeah!";
                 return;
             case 281: // 更新
                 if (!string.IsNullOrEmpty(_currentFolderPath)) OpenPath(_currentFolderPath);

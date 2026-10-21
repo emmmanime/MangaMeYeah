@@ -49,7 +49,7 @@ public static class ExplorerContextMenuService
         {
             if (includeFolder)
             {
-                RegisterShellEntry(FolderShellKey, "MangaMeYeahで開く(&M)", exePath, $"\"{exePath}\" \"%1\"");
+                RegisterShellEntry(FolderShellKey, "MangaMeYeah!で開く(&M)", exePath, $"\"{exePath}\" \"%1\"");
             }
             else
             {
@@ -58,7 +58,7 @@ public static class ExplorerContextMenuService
 
             if (includeFolderBackground)
             {
-                RegisterShellEntry(FolderBgShellKey, "このフォルダをMangaMeYeahで開く(&M)", exePath, $"\"{exePath}\" \"%V\"");
+                RegisterShellEntry(FolderBgShellKey, "このフォルダをMangaMeYeah!で開く(&M)", exePath, $"\"{exePath}\" \"%V\"");
             }
             else
             {
@@ -67,7 +67,7 @@ public static class ExplorerContextMenuService
 
             if (includeFiles)
             {
-                RegisterShellEntry(FileShellKey, "MangaMeYeahで開く(&M)", exePath, $"\"{exePath}\" \"%1\"");
+                RegisterShellEntry(FileShellKey, "MangaMeYeah!で開く(&M)", exePath, $"\"{exePath}\" \"%1\"");
             }
             else
             {
@@ -89,7 +89,7 @@ public static class ExplorerContextMenuService
             Registry.CurrentUser.DeleteSubKeyTree(FolderShellKey, throwOnMissingSubKey: false);
             Registry.CurrentUser.DeleteSubKeyTree(FolderBgShellKey, throwOnMissingSubKey: false);
             Registry.CurrentUser.DeleteSubKeyTree(FileShellKey, throwOnMissingSubKey: false);
-            return (true, "エクスプローラーの右クリックメニューから「MangaMeYeahで開く」をすべて削除しました。");
+            return (true, "エクスプローラーの右クリックメニューから「MangaMeYeah!で開く」をすべて削除しました。");
         }
         catch (Exception ex)
         {

@@ -16,21 +16,21 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="エクスプローラーの右クリックメニューに「MangaMeYeahで開く」を追加・削除します。"
+                   Text="エクスプローラーの右クリックメニューに「MangaMeYeah!で開く」を追加・削除します。"
                    Margin="0,0,0,12" />
 
         <GroupBox Grid.Row="1" Header="エクスプローラー右クリックメニュー連携 (HKCU)" Padding="10,8">
             <StackPanel>
                 <CheckBox x:Name="FolderMenuCheckBox"
-                          Content="フォルダの右クリックメニューに「MangaMeYeahで開く」を追加"
+                          Content="フォルダの右クリックメニューに「MangaMeYeah!で開く」を追加"
                           IsChecked="True"
                           Margin="0,4,0,8" />
                 <CheckBox x:Name="FolderBgMenuCheckBox"
-                          Content="フォルダ背景(空白部)の右クリックに「このフォルダをMangaMeYeahで開く」を追加"
+                          Content="フォルダ背景(空白部)の右クリックに「このフォルダをMangaMeYeah!で開く」を追加"
                           IsChecked="True"
                           Margin="0,0,0,8" />
                 <CheckBox x:Name="FileMenuCheckBox"
-                          Content="ファイルの右クリックメニューに「MangaMeYeahで開く」を追加"
+                          Content="ファイルの右クリックメニューに「MangaMeYeah!で開く」を追加"
                           IsChecked="True"
                           Margin="0,0,0,4" />
             </StackPanel>

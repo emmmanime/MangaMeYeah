@@ -257,7 +257,7 @@ public class ViewerSettings
     public void SaveToIniFile(string filePath)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("; MangaMeYeah Configuration File");
+        sb.AppendLine("; MangaMeYeah! Configuration File");
         sb.AppendLine("; Encoding: UTF-8 without BOM");
         sb.AppendLine();
 

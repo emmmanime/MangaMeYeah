@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MangaMeYeah"
+        Title="MangaMeYeah!"
         Icon="pack://application:,,,/Assets/MangaMeYeah.ico"
         Width="1120"
         Height="800"
@@ -154,7 +154,7 @@
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         IsHitTestVisible="False">
-                <TextBlock Text="MangaMeYeah"
+                <TextBlock Text="MangaMeYeah!"
                            Foreground="#D8D8D8"
                            FontSize="28"
                            FontWeight="Bold"

@@ -15,7 +15,7 @@ public partial class VersionWindow : Window
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? "0.3.5";
         string cleanVer = rawVer.Split('+')[0];
-        VersionTextBlock.Text = $"マンガミーヤー v{cleanVer}";
+        VersionTextBlock.Text = $"MangaMeYeah! v{cleanVer}";
     }
 
     private void OkButton_Click(object sender, RoutedEventArgs e)

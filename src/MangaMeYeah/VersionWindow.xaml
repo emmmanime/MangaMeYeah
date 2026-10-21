@@ -31,7 +31,7 @@
 
             <!-- アプリ名・バージョン番号 (中央・太字) -->
             <TextBlock x:Name="VersionTextBlock"
-                       Text="マンガミーヤー v0.3.5"
+                       Text="MangaMeYeah! v0.3.5"
                        FontSize="18"
                        FontWeight="Bold"
                        Foreground="#1A1A1A"
