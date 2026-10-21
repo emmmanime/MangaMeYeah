@@ -17,7 +17,7 @@
     <Grid>
         <!-- メインビューア領域 (通常時は上部メニューバー分 Margin="0,20,0,0"、フルスクリーン時は Margin="0" で画面全体を使用しメニューがオーバーレイでプルダウン) -->
         <Grid x:Name="ViewerRootGrid"
-              Margin="0,20,0,0"
+              Margin="0,22,0,0"
               Background="#808080"
               ClipToBounds="True"
               Focusable="True"
@@ -466,7 +466,7 @@
         <!-- メインメニューバー (最前面の上部に配置、フルスクリーン時はマウスを上端に寄せるとプルダウン表示) -->
         <Menu x:Name="MainMenuBar"
               VerticalAlignment="Top"
-              Height="20"
+              Height="22"
               Panel.ZIndex="100"
               MouseLeave="MainMenuBar_MouseLeave">
             <MenuItem Header="ファイル(_F)">
@@ -579,6 +579,9 @@
                 </MenuItem>
                 <Separator />
                 <MenuItem Uid="MAIN_269" Header="別ウインドウ表示" Tag="別ウインドウ表示" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40300" Header="OSDテキスト表示(_O)" Tag="OSDテキスト表示" Click="MenuItem_Click" IsCheckable="True" />
+                <MenuItem Uid="MAIN_40301" Header="マウスジェスチャーの軌跡表示(_G)" Tag="マウスジェスチャーの軌跡表示" Click="MenuItem_Click" IsCheckable="True" />
             </MenuItem>
             <MenuItem Header="スケールモード(_S)">
                 <MenuItem Uid="MAIN_40101" Header="縦横どちらか合わせる" Tag="縦横どちらか合わせる" Click="MenuItem_Click" />

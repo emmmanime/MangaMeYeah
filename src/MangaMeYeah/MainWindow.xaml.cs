@@ -48,8 +48,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     // フルスクリーン状態管理 (0=固定表示, 1=ポップアップ表示[デフォルト], 2=非表示)
     private bool _isFullScreen;
     private int _fullScreenMenuMode = 1;
-    private WindowState _savedWindowState;
-    private WindowStyle _savedWindowStyle;
+    private WindowState _savedWindowState = WindowState.Normal;
+    private WindowStyle _savedWindowStyle = WindowStyle.SingleBorderWindow;
+    private ResizeMode _savedResizeMode = ResizeMode.CanResize;
+    private Rect _savedWindowRect;
 
     // ルーペ状態管理
     private bool _isLoupeActive;
@@ -228,6 +230,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         DataContext = this;
 
         SourceInitialized += MainWindow_SourceInitialized;
+        DpiChanged += (_, _) =>
+        {
+            if (_isFullScreen) ApplyFullScreenBounds();
+        };
 
         _settings = ViewerSettings.Load();
         ThumbnailListBox.ItemsSource = _thumbnailRows;
@@ -311,7 +317,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else if (_settings.SaveWindowPlacementOnExit && _isFullScreen)
         {
-            if (RestoreBounds.Width >= 400 && RestoreBounds.Height >= 300)
+            if (_savedWindowRect.Width >= 400 && _savedWindowRect.Height >= 300)
+            {
+                _settings.SavedWindowWidth = _savedWindowRect.Width;
+                _settings.SavedWindowHeight = _savedWindowRect.Height;
+                _settings.SavedWindowLeft = _savedWindowRect.Left;
+                _settings.SavedWindowTop = _savedWindowRect.Top;
+            }
+            else if (RestoreBounds.Width >= 400 && RestoreBounds.Height >= 300)
             {
                 _settings.SavedWindowWidth = RestoreBounds.Width;
                 _settings.SavedWindowHeight = RestoreBounds.Height;
@@ -1335,6 +1348,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _ => "複数枚表示"
     };
 
+    private void ApplyFullScreenBounds()
+    {
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        IntPtr hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (hMonitor != IntPtr.Zero)
+        {
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
+            if (GetMonitorInfo(hMonitor, ref mi))
+            {
+                var dpi = VisualTreeHelper.GetDpi(this);
+                double dpiX = dpi.DpiScaleX > 0 ? dpi.DpiScaleX : 1.0;
+                double dpiY = dpi.DpiScaleY > 0 ? dpi.DpiScaleY : 1.0;
+
+                Left = mi.rcMonitor.Left / dpiX;
+                Top = mi.rcMonitor.Top / dpiY;
+                Width = (mi.rcMonitor.Right - mi.rcMonitor.Left) / dpiX;
+                Height = (mi.rcMonitor.Bottom - mi.rcMonitor.Top) / dpiY;
+            }
+        }
+    }
+
     private void ToggleFullScreen()
     {
         _isFullScreen = !_isFullScreen;
@@ -1343,20 +1377,37 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _savedWindowState = WindowState;
             _savedWindowStyle = WindowStyle;
+            _savedResizeMode = ResizeMode;
+            _savedWindowRect = new Rect(Left, Top, Width, Height);
+
+            WindowState = WindowState.Normal;
+            WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
+
+            ApplyFullScreenBounds();
+
+            Topmost = _settings.FullScreenTopMost;
+            ViewerRootGrid.Cursor = _settings.FullScreenHideCursor ? Cursors.None : Cursors.Arrow;
             ViewerRootGrid.Margin = new Thickness(0);
             MainMenuBar.Visibility = _fullScreenMenuMode == 0 ? Visibility.Visible : Visibility.Collapsed;
-            WindowStyle = WindowStyle.None;
-            WindowState = WindowState.Maximized;
             ShowOsd("フルスクリーン表示 (画面上端にマウス移動でメニュー表示 / ↑ジェスチャで解除)");
         }
         else
         {
-            ResizeMode = ResizeMode.CanResize;
-            ViewerRootGrid.Margin = new Thickness(0, 20, 0, 0);
-            MainMenuBar.Visibility = Visibility.Visible;
+            Topmost = false;
+            ViewerRootGrid.Cursor = Cursors.Arrow;
             WindowStyle = _savedWindowStyle;
+            ResizeMode = _savedResizeMode;
             WindowState = _savedWindowState;
+            if (_savedWindowState == WindowState.Normal && _savedWindowRect.Width > 0 && _savedWindowRect.Height > 0)
+            {
+                Left = _savedWindowRect.Left;
+                Top = _savedWindowRect.Top;
+                Width = _savedWindowRect.Width;
+                Height = _savedWindowRect.Height;
+            }
+            ViewerRootGrid.Margin = new Thickness(0, 22, 0, 0);
+            MainMenuBar.Visibility = Visibility.Visible;
             ShowOsd("ウィンドウ表示");
         }
         UpdateMenuCheckStates();
@@ -1388,15 +1439,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // ポップアップ表示モード: 画面最上部 (Y <= 16px) にマウスを移動するとプルダウン表示
-        if (mousePosInRoot.Y <= 16)
+        // ポップアップ表示モード: 画面最上部 (Y <= 22px) にマウスを移動するとプルダウン表示
+        if (mousePosInRoot.Y <= 22)
         {
             if (MainMenuBar.Visibility != Visibility.Visible)
             {
                 MainMenuBar.Visibility = Visibility.Visible;
             }
         }
-        else if (mousePosInRoot.Y > 26 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
+        else if (mousePosInRoot.Y > 28 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
         {
             if (MainMenuBar.Visibility == Visibility.Visible)
             {
@@ -1991,14 +2042,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 _isRightGestureDragging = true;
                 _longPressTimer.Stop();
-                GestureOverlayCanvas.Visibility = Visibility.Visible;
-                GestureTrailPolyline.Points.Add(pos);
 
-                if (changed)
+                if (_settings.ShowGestureTrail)
                 {
-                    string pattern = _gestureEngine.CurrentGesturePattern;
-                    var (_, desc) = MouseGestureEngine.ResolveGesture(pattern);
-                    GestureStatusText.Text = $"ジェスチャ [{pattern}] : {desc}";
+                    GestureOverlayCanvas.Visibility = Visibility.Visible;
+                    GestureTrailPolyline.Points.Add(pos);
+
+                    if (changed)
+                    {
+                        string pattern = _gestureEngine.CurrentGesturePattern;
+                        var (_, desc) = MouseGestureEngine.ResolveGesture(pattern);
+                        GestureStatusText.Text = $"ジェスチャ [{pattern}] : {desc}";
+                    }
                 }
             }
         }
@@ -2468,6 +2523,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     40019 => _settings.PreloadEnabled,
                     >= 400 and <= 418 => (int)_currentSortMode == id,
                     >= 344 and <= 349 => (int)_settings.FolderSort == id,
+                    40300 => _settings.ShowOsdText,
+                    40301 => _settings.ShowGestureTrail,
                     _ => null
                 };
 
@@ -2731,6 +2788,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             case 40004:
                 ShowCacheInfoDialog();
+                return;
+            case 40300: // OSDテキスト表示
+                if (_settings.ShowOsdText)
+                {
+                    ShowOsd("OSDテキスト表示: OFF");
+                    _settings.ShowOsdText = false;
+                }
+                else
+                {
+                    _settings.ShowOsdText = true;
+                    ShowOsd("OSDテキスト表示: ON");
+                }
+                _settings.Save();
+                UpdateMenuCheckStates();
+                return;
+            case 40301: // マウスジェスチャーの軌跡表示
+                _settings.ShowGestureTrail = !_settings.ShowGestureTrail;
+                _settings.Save();
+                UpdateMenuCheckStates();
+                ShowOsd(_settings.ShowGestureTrail ? "ジェスチャー軌跡表示: ON" : "ジェスチャー軌跡表示: OFF");
                 return;
         }
 

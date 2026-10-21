@@ -146,6 +146,7 @@ public class ViewerSettings
     public bool ShowScrollBars { get; set; } = false;
     public bool ShowSubfolderInCaption { get; set; } = true;
     public bool ShowOsdText { get; set; } = true;
+    public bool ShowGestureTrail { get; set; } = true;
     public bool FullScreenHideCursor { get; set; } = false;
     public bool FullScreenTopMost { get; set; } = false;
     public bool OpenLastFileOnStartup { get; set; } = false;
@@ -296,6 +297,7 @@ public class ViewerSettings
         sb.AppendLine($"DispScrollBar={(ShowScrollBars ? 1 : 0)}");
         sb.AppendLine($"CaptionText={(ShowSubfolderInCaption ? 1 : 0)}");
         sb.AppendLine($"DispTextInfo={(ShowOsdText ? 1 : 0)}");
+        sb.AppendLine($"ShowGestureTrail={(ShowGestureTrail ? 1 : 0)}");
         sb.AppendLine($"HideCursor={(FullScreenHideCursor ? 1 : 0)}");
         sb.AppendLine($"TopMost={(FullScreenTopMost ? 1 : 0)}");
         sb.AppendLine($"OpenLastFileOnStartup={(OpenLastFileOnStartup ? 1 : 0)}");
@@ -536,6 +538,10 @@ public class ViewerSettings
                     case "disptextinfo":
                     case "showosdtext":
                         settings.ShowOsdText = ParseBool(val, settings.ShowOsdText);
+                        break;
+                    case "showgesturetrail":
+                    case "dispgesturetrail":
+                        settings.ShowGestureTrail = ParseBool(val, settings.ShowGestureTrail);
                         break;
                     case "hidecursor":
                     case "fullscreenhidecursor":
