@@ -1122,6 +1122,112 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    public void JumpToCreatorStart()
+    {
+        if (_imageFiles.Count == 0 || _currentIndex < 0 || _currentIndex >= _imageFiles.Count) return;
+
+        string currentPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[_currentIndex]);
+
+        // 現在のクリエイターの最初のインデックスを探す
+        int firstIdx = _currentIndex;
+        while (firstIdx > 0)
+        {
+            string prevPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[firstIdx - 1]);
+            if (string.Equals(currentPrefix, prevPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                firstIdx--;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (_currentIndex > firstIdx)
+        {
+            // 現在位置が途中または末尾なら、現在のクリエイターの先頭へジャンプ
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
+            _currentIndex = firstIdx;
+            RenderCurrentPage();
+            ShowOsd($"クリエイター先頭: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+        }
+        else if (firstIdx > 0)
+        {
+            // すでに先頭にいた場合、前のクリエイターの先頭へジャンプ
+            int targetIdx = firstIdx - 1;
+            string prevCreatorPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx]);
+            while (targetIdx > 0)
+            {
+                string p = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx - 1]);
+                if (string.Equals(prevCreatorPrefix, p, StringComparison.OrdinalIgnoreCase))
+                {
+                    targetIdx--;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
+            _currentIndex = targetIdx;
+            RenderCurrentPage();
+            ShowOsd($"前のクリエイター: {prevCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+        }
+        else
+        {
+            ShowOsd($"最初のクリエイターの先頭です: {currentPrefix} (1/{_imageFiles.Count})");
+        }
+    }
+
+    public void JumpToCreatorEnd()
+    {
+        if (_imageFiles.Count == 0 || _currentIndex < 0 || _currentIndex >= _imageFiles.Count) return;
+
+        string currentPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[_currentIndex]);
+
+        // 現在のクリエイターの最後のインデックスを探す
+        int lastIdx = _currentIndex;
+        while (lastIdx < _imageFiles.Count - 1)
+        {
+            string nextPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[lastIdx + 1]);
+            if (string.Equals(currentPrefix, nextPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                lastIdx++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (_currentIndex < lastIdx)
+        {
+            // 現在位置が先頭または途中なら、現在のクリエイターの最後尾へジャンプ
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
+            _currentIndex = lastIdx;
+            RenderCurrentPage();
+            ShowOsd($"クリエイター最後尾: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+        }
+        else if (lastIdx < _imageFiles.Count - 1)
+        {
+            // すでに最後尾にいた場合、次のクリエイターの先頭へスキップ
+            int targetIdx = lastIdx + 1;
+            string nextCreatorPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx]);
+            _navigationHistory.Push(_currentIndex);
+            _forcedTwoPageIndex = -1;
+            _currentIndex = targetIdx;
+            RenderCurrentPage();
+            ShowOsd($"次のクリエイター: {nextCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+        }
+        else
+        {
+            ShowOsd($"最後のクリエイターの最後尾です: {currentPrefix} ({_imageFiles.Count}/{_imageFiles.Count})");
+        }
+    }
+
     internal void NextPage()
     {
         if (_imageFiles.Count == 0) return;
@@ -2261,6 +2367,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             switch (key)
             {
+                case Key.Home:
+                    JumpToCreatorStart();
+                    e.Handled = true;
+                    return;
+                case Key.End:
+                    JumpToCreatorEnd();
+                    e.Handled = true;
+                    return;
                 case Key.O:
                     ShowOpenFileDialog();
                     e.Handled = true;
@@ -2737,6 +2851,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             case 154:
                 if (_imageFiles.Count > 0) { _forcedTwoPageIndex = -1; _currentIndex = 0; RenderCurrentPage(); }
+                return;
+            case 40310:
+                JumpToCreatorStart();
+                return;
+            case 40311:
+                JumpToCreatorEnd();
                 return;
             case 188:
                 MoveToSiblingFolder(+1);

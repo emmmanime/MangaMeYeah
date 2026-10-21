@@ -427,4 +427,67 @@ public static class ImageFolderService
         try { return File.GetLastWriteTimeUtc(path); }
         catch { return DateTime.MinValue; }
     }
+
+    /// <summary>
+    /// ファイル名からクリエイター名や作品グループなどのプレフィックス（接頭辞）を抽出します。
+    /// 例:
+    ///   - "aiartchino-1650392376859369472-20230424_154441-img1.jpg" -> "aiartchino"
+    ///   - "AIart_minato-1650400000000000000-20230424_160000-img1.jpg" -> "AIart_minato"
+    ///   - "[涼屋] あいうえお 01.jpg" -> "涼屋"
+    ///   - "【作者名】 タイトル 001.png" -> "作者名"
+    ///   - "illustrator_001.jpg" -> "illustrator"
+    ///   - "manga001.jpg" -> "manga"
+    /// </summary>
+    public static string GetCreatorPrefix(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return string.Empty;
+        string fileName = Path.GetFileNameWithoutExtension(filePath);
+        if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
+
+        // パターン1: [クリエイター名] または 【クリエイター名】 で始まる場合
+        if (fileName.StartsWith('[') && fileName.Contains(']'))
+        {
+            int closeIdx = fileName.IndexOf(']');
+            if (closeIdx > 1)
+            {
+                return fileName.Substring(1, closeIdx - 1).Trim();
+            }
+        }
+        else if (fileName.StartsWith('【') && fileName.Contains('】'))
+        {
+            int closeIdx = fileName.IndexOf('】');
+            if (closeIdx > 1)
+            {
+                return fileName.Substring(1, closeIdx - 1).Trim();
+            }
+        }
+
+        // パターン2: Twitter Image Downloader など (Creator-TweetId-Date-Index.jpg)
+        // 最初のハイフン '-' の前
+        int hyphenIdx = fileName.IndexOf('-');
+        if (hyphenIdx > 0)
+        {
+            return fileName.Substring(0, hyphenIdx).Trim();
+        }
+
+        // パターン3: アンダースコア区切りで末尾側が数字/連番などの場合
+        int lastUnderscore = fileName.LastIndexOf('_');
+        if (lastUnderscore > 0)
+        {
+            return fileName.Substring(0, lastUnderscore).Trim();
+        }
+
+        // パターン4: ハイフンもアンダースコアもない場合、末尾の連続する数字を除いたベース部分
+        int i = fileName.Length - 1;
+        while (i >= 0 && char.IsDigit(fileName[i]))
+        {
+            i--;
+        }
+        if (i >= 0 && i < fileName.Length - 1)
+        {
+            return fileName.Substring(0, i + 1).Trim();
+        }
+
+        return fileName;
+    }
 }

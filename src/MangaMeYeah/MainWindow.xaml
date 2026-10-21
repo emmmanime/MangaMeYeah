@@ -59,6 +59,9 @@
                     <Separator />
                     <MenuItem Uid="CTX_155" Header="指定ページへ" Tag="指定ページへ" Click="MenuItem_Click" />
                     <MenuItem Uid="CTX_160" Header="ファイルビュー" Tag="ファイルビュー" Click="MenuItem_Click" />
+                    <Separator />
+                    <MenuItem Uid="CTX_40310" Header="クリエイターの先頭へ(_H)" InputGestureText="Ctrl+Home" Tag="クリエイターの先頭へ" Click="MenuItem_Click" />
+                    <MenuItem Uid="CTX_40311" Header="クリエイターの最後尾へ(_E)" InputGestureText="Ctrl+End" Tag="クリエイターの最後尾へ" Click="MenuItem_Click" />
                 </MenuItem>
                 <MenuItem Header="Avisynthフィルタプロファイル(_P)">
                     <MenuItem Uid="CTX_500" Header="profile" Tag="profile" Click="MenuItem_Click" />
@@ -625,6 +628,9 @@
                 <Separator />
                 <MenuItem Uid="MAIN_155" Header="指定ページへ" Tag="指定ページへ" Click="MenuItem_Click" />
                 <MenuItem Uid="MAIN_160" Header="ファイルビュー" Tag="ファイルビュー" Click="MenuItem_Click" />
+                <Separator />
+                <MenuItem Uid="MAIN_40310" Header="クリエイターの先頭へ(_H)" InputGestureText="Ctrl+Home" Tag="クリエイターの先頭へ" Click="MenuItem_Click" />
+                <MenuItem Uid="MAIN_40311" Header="クリエイターの最後尾へ(_E)" InputGestureText="Ctrl+End" Tag="クリエイターの最後尾へ" Click="MenuItem_Click" />
                 <Separator />
                 <MenuItem Uid="MAIN_305" Header="非リピート" Tag="非リピート" Click="MenuItem_Click" />
                 <MenuItem Uid="MAIN_306" Header="リピート" Tag="リピート" Click="MenuItem_Click" />
