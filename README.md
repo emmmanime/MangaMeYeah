@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo/logo_official.png" alt="MangaMeYeah! Logo" width="480">
+  <img src="docs/logo/logo_with_icon_transparent.png" alt="MangaMeYeah! Logo" width="560">
 </p>
 
 # MangaMeYeah!（マンガミーヤー）
