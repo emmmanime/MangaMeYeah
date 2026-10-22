@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo/logo_official.png" alt="MangaMeYeah! Logo" width="480">
+</p>
+
 # MangaMeYeah!（マンガミーヤー）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
