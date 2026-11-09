@@ -399,14 +399,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (!isModern)
         {
-            var retroFont = new FontFamily("MS UI Gothic");
+            // Windows 10/11 上の MangaMeeya (Win32 HMENU) と同じ OS 標準メニューフォント (Yu Gothic UI 9pt = 12px) を採用
+            var retroFont = new FontFamily("Yu Gothic UI, Meiryo UI");
             MainMenuBar.FontFamily = retroFont;
             MainMenuBar.FontSize = 12.0;
-            TextOptions.SetTextFormattingMode(MainMenuBar, TextFormattingMode.Display);
+            TextOptions.SetTextFormattingMode(MainMenuBar, TextFormattingMode.Ideal);
 
             ViewerContextMenu.FontFamily = retroFont;
             ViewerContextMenu.FontSize = 12.0;
-            TextOptions.SetTextFormattingMode(ViewerContextMenu, TextFormattingMode.Display);
+            TextOptions.SetTextFormattingMode(ViewerContextMenu, TextFormattingMode.Ideal);
 
             HelpManualTopMenuItem.Visibility = Visibility.Collapsed;
             HelpManualTopSeparator.Visibility = Visibility.Collapsed;

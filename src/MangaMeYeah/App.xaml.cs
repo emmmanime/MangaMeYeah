@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        EnsureLeftAlignedMenuDrop();
+
         DispatcherUnhandledException += (s, args) =>
         {
             MessageBox.Show($"予期せぬエラーが発生しました:\n{args.Exception.Message}\n\n{args.Exception.StackTrace}", "MangaMeYeah エラー", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -59,6 +62,42 @@ public partial class App : Application
         }
 
         base.OnStartup(e);
+    }
+
+    /// <summary>
+    /// Windows 10/11 のタブレットペン入力設定(MenuDropAlignment=True)により、
+    /// WPF のメニュープルダウンがメニュー項目の右端基準(左方向展開)になってしまう問題を防止し、
+    /// MangaMeeya 等の標準 Win32 アプリと同様に「メニュー項目の左端とプルダウンの左端が一致」するよう強制する。
+    /// </summary>
+    private static void EnsureLeftAlignedMenuDrop()
+    {
+        try
+        {
+            var menuDropAlignmentField = typeof(SystemParameters).GetField(
+                "_menuDropAlignment",
+                BindingFlags.NonPublic | BindingFlags.Static);
+
+            void SetLeftAligned()
+            {
+                if (SystemParameters.MenuDropAlignment && menuDropAlignmentField != null)
+                {
+                    menuDropAlignmentField.SetValue(null, false);
+                }
+            }
+
+            SetLeftAligned();
+            SystemParameters.StaticPropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(SystemParameters.MenuDropAlignment))
+                {
+                    SetLeftAligned();
+                }
+            };
+        }
+        catch
+        {
+            // Ignore reflection failures
+        }
     }
 
     private static void StartPipeListener(string pipeName)
