@@ -13,7 +13,7 @@ public partial class VersionWindow : Window
 
         string rawVer = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-            ?? "0.4.1";
+            ?? "0.4.2";
         string cleanVer = rawVer.Split('+')[0];
         VersionTextBlock.Text = $"MangaMeYeah! v{cleanVer}";
     }

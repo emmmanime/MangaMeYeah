@@ -68,7 +68,8 @@ public static class ArchiveImageService
     public static List<string> GetImagesInArchive(
         string archivePath,
         FileSortMode sortMode = FileSortMode.PathNaturalAsc,
-        bool includeSubArchives = true)
+        bool includeSubArchives = true,
+        bool openArchivesOnly = false)
     {
         if (!File.Exists(archivePath)) return [];
 
@@ -78,11 +79,11 @@ public static class ArchiveImageService
             List<string> entries;
             if (ext is ".zip" or ".cbz")
             {
-                entries = GetImagesInZip(archivePath, includeSubArchives);
+                entries = GetImagesInZip(archivePath, includeSubArchives, openArchivesOnly);
             }
             else
             {
-                entries = GetImagesInSharpCompressArchive(archivePath, includeSubArchives);
+                entries = GetImagesInSharpCompressArchive(archivePath, includeSubArchives, openArchivesOnly);
             }
 
             return ImageFolderService.SortFilesHierarchical(entries, sortMode);
@@ -93,10 +94,11 @@ public static class ArchiveImageService
         }
     }
 
-    private static List<string> GetImagesInZip(string archivePath, bool includeSubArchives)
+    private static List<string> GetImagesInZip(string archivePath, bool includeSubArchives, bool openArchivesOnly)
     {
         using var zip = ZipFile.OpenRead(archivePath);
-        var result = new List<string>();
+        var directResult = new List<string>();
+        var subArchiveResult = new List<string>();
 
         foreach (var entry in zip.Entries)
         {
@@ -112,9 +114,9 @@ public static class ArchiveImageService
 
             if (ImageFolderService.IsSupportedImageFile(normKey))
             {
-                result.Add(BuildArchiveEntryPath(archivePath, normKey));
+                directResult.Add(BuildArchiveEntryPath(archivePath, normKey));
             }
-            else if (includeSubArchives && IsArchiveFileName(fileName))
+            else if ((includeSubArchives || openArchivesOnly) && IsArchiveFileName(fileName))
             {
                 // Inner sub-archive found inside zip!
                 try
@@ -131,7 +133,7 @@ public static class ArchiveImageService
                     var innerImages = GetImagesFromMemoryArchive(subBytes, fileName, includeSubArchives: false);
                     foreach (var innerKey in innerImages)
                     {
-                        result.Add(BuildArchiveEntryPath(archivePath, $"{normKey}|{innerKey}"));
+                        subArchiveResult.Add(BuildArchiveEntryPath(archivePath, $"{normKey}|{innerKey}"));
                     }
                 }
                 catch
@@ -141,15 +143,22 @@ public static class ArchiveImageService
             }
         }
 
-        return result;
+        if (openArchivesOnly && subArchiveResult.Count > 0)
+        {
+            return subArchiveResult;
+        }
+
+        directResult.AddRange(subArchiveResult);
+        return directResult;
     }
 
-    private static List<string> GetImagesInSharpCompressArchive(string archivePath, bool includeSubArchives)
+    private static List<string> GetImagesInSharpCompressArchive(string archivePath, bool includeSubArchives, bool openArchivesOnly)
     {
         lock (ArchiveLock)
         {
             using var archive = ArchiveFactory.OpenArchive(archivePath);
-            var result = new List<string>();
+            var directResult = new List<string>();
+            var subArchiveResult = new List<string>();
 
             foreach (var entry in archive.Entries)
             {
@@ -168,9 +177,9 @@ public static class ArchiveImageService
 
                 if (ImageFolderService.IsSupportedImageFile(fileName))
                 {
-                    result.Add(BuildArchiveEntryPath(archivePath, normKey));
+                    directResult.Add(BuildArchiveEntryPath(archivePath, normKey));
                 }
-                else if (includeSubArchives && IsArchiveFileName(fileName))
+                else if ((includeSubArchives || openArchivesOnly) && IsArchiveFileName(fileName))
                 {
                     try
                     {
@@ -185,7 +194,7 @@ public static class ArchiveImageService
                         var innerImages = GetImagesFromMemoryArchive(subBytes, fileName, includeSubArchives: false);
                         foreach (var innerKey in innerImages)
                         {
-                            result.Add(BuildArchiveEntryPath(archivePath, $"{normKey}|{innerKey}"));
+                            subArchiveResult.Add(BuildArchiveEntryPath(archivePath, $"{normKey}|{innerKey}"));
                         }
                     }
                     catch
@@ -195,7 +204,13 @@ public static class ArchiveImageService
                 }
             }
 
-            return result;
+            if (openArchivesOnly && subArchiveResult.Count > 0)
+            {
+                return subArchiveResult;
+            }
+
+            directResult.AddRange(subArchiveResult);
+            return directResult;
         }
     }
 
@@ -378,6 +393,74 @@ public static class ArchiveImageService
             {
                 SubArchiveBytesCache.TryRemove(oldKey, out _);
             }
+        }
+    }
+
+    public static bool TryGetEntryMetadata(string archiveEntryPath, out long uncompressedSize, out DateTime? lastWriteTime)
+    {
+        uncompressedSize = 0;
+        lastWriteTime = null;
+
+        if (!IsArchiveEntryPath(archiveEntryPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            string[] parts = archiveEntryPath.Split('|');
+            if (parts.Length < 2) return false;
+
+            string outerArchive = parts[0];
+            if (!File.Exists(outerArchive)) return false;
+
+            if (RecentEntryBytesCache.TryGetValue(archiveEntryPath, out var cached))
+            {
+                uncompressedSize = cached.Length;
+            }
+
+            string ext = Path.GetExtension(outerArchive).ToLowerInvariant();
+            if (parts.Length == 2)
+            {
+                string entryKey = NormalizeEntryKey(parts[1]);
+                if (ext is ".zip" or ".cbz")
+                {
+                    using var zip = ZipFile.OpenRead(outerArchive);
+                    var entry = zip.Entries.FirstOrDefault(e => string.Equals(NormalizeEntryKey(e.FullName), entryKey, StringComparison.OrdinalIgnoreCase));
+                    if (entry != null)
+                    {
+                        uncompressedSize = entry.Length;
+                        lastWriteTime = entry.LastWriteTime.LocalDateTime;
+                        return true;
+                    }
+                }
+                else
+                {
+                    lock (ArchiveLock)
+                    {
+                        using var archive = ArchiveFactory.OpenArchive(outerArchive);
+                        var entry = archive.Entries.FirstOrDefault(e => !e.IsDirectory && string.Equals(NormalizeEntryKey(e.Key ?? string.Empty), entryKey, StringComparison.OrdinalIgnoreCase));
+                        if (entry != null)
+                        {
+                            uncompressedSize = entry.Size;
+                            lastWriteTime = entry.LastModifiedTime;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (uncompressedSize == 0)
+            {
+                using var s = OpenEntryStream(archiveEntryPath);
+                uncompressedSize = s.Length;
+            }
+            lastWriteTime ??= File.GetLastWriteTime(outerArchive);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

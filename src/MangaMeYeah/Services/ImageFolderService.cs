@@ -83,7 +83,8 @@ public static class ImageFolderService
         FileSortMode sortMode = FileSortMode.PathNaturalAsc,
         bool includeSubfolders = true,
         bool includeFolderArchives = true,
-        bool includeArchiveArchives = true)
+        bool includeArchiveArchives = true,
+        bool openArchivesOnly = false)
     {
         if (!Directory.Exists(folderPath))
         {
@@ -91,7 +92,7 @@ public static class ImageFolderService
         }
 
         var files = new List<string>();
-        EnumerateImagesHierarchical(folderPath, files, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives);
+        EnumerateImagesHierarchical(folderPath, files, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives, openArchivesOnly);
 
         if (sortMode == FileSortMode.Random)
         {
@@ -107,23 +108,27 @@ public static class ImageFolderService
         FileSortMode sortMode,
         bool includeSubfolders,
         bool includeFolderArchives,
-        bool includeArchiveArchives)
+        bool includeArchiveArchives,
+        bool openArchivesOnly)
     {
         bool isDescending = sortMode is FileSortMode.PathNaturalDesc or FileSortMode.PathDesc;
 
-        // 1. Direct files in current folder
+        // 1. Direct files in current folder (skipped when openArchivesOnly is true)
         var directFiles = new List<string>();
-        try
+        if (!openArchivesOnly)
         {
-            foreach (string file in Directory.EnumerateFiles(currentDir))
+            try
             {
-                if (IsSupportedImageFile(file))
+                foreach (string file in Directory.EnumerateFiles(currentDir))
                 {
-                    directFiles.Add(file);
+                    if (IsSupportedImageFile(file))
+                    {
+                        directFiles.Add(file);
+                    }
                 }
             }
+            catch { }
         }
-        catch { }
 
         // If ascending, root files (covers, etc.) come before subfolders
         if (!isDescending && directFiles.Count > 0)
@@ -131,16 +136,18 @@ public static class ImageFolderService
             accumulator.AddRange(SortFiles(directFiles, sortMode));
         }
 
-        if (includeSubfolders)
+        if (includeSubfolders || openArchivesOnly)
         {
             try
             {
-                var subDirs = Directory.EnumerateDirectories(currentDir)
-                    .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) &&
-                                !Path.GetFileName(d).StartsWith('.'))
-                    .ToList();
+                var subDirs = includeSubfolders
+                    ? Directory.EnumerateDirectories(currentDir)
+                        .Where(d => !Path.GetFileName(d).Equals("__MACOSX", StringComparison.OrdinalIgnoreCase) &&
+                                    !Path.GetFileName(d).StartsWith('.'))
+                        .ToList()
+                    : new List<string>();
 
-                var archives = includeFolderArchives
+                var archives = (includeFolderArchives || openArchivesOnly)
                     ? Directory.EnumerateFiles(currentDir).Where(ArchiveImageService.IsArchiveFile).ToList()
                     : new List<string>();
 
@@ -156,11 +163,11 @@ public static class ImageFolderService
                 {
                     if (Directory.Exists(item))
                     {
-                        EnumerateImagesHierarchical(item, accumulator, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives);
+                        EnumerateImagesHierarchical(item, accumulator, sortMode, includeSubfolders, includeFolderArchives, includeArchiveArchives, openArchivesOnly);
                     }
                     else if (ArchiveImageService.IsArchiveFile(item))
                     {
-                        var archiveImages = ArchiveImageService.GetImagesInArchive(item, sortMode, includeArchiveArchives);
+                        var archiveImages = ArchiveImageService.GetImagesInArchive(item, sortMode, includeArchiveArchives, openArchivesOnly: false);
                         accumulator.AddRange(archiveImages);
                     }
                 }

@@ -163,7 +163,8 @@
                                     <RadioButton x:Name="SubfolderIncludeRadio" Content="サブフォルダも読み込む" GroupName="SubfolderMode" Checked="SettingControl_Changed" />
                                     <RadioButton x:Name="SubfolderExcludeRadio" Content="サブフォルダは読み込まない" GroupName="SubfolderMode" Checked="SettingControl_Changed" />
                                     <CheckBox x:Name="IncludeFolderArchivesCheck" Content="フォルダ内書庫もサブフォルダに含める" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,2" />
-                                    <CheckBox x:Name="IncludeArchiveArchivesCheck" Content="書庫内書庫もサブフォルダに含める" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,4" />
+                                    <CheckBox x:Name="IncludeArchiveArchivesCheck" Content="書庫内書庫もサブフォルダに含める" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,2" />
+                                    <CheckBox x:Name="OpenArchivesOnlyCheck" Content="書庫のみ開く (フォルダー・書庫内のZIP/RAR/7z等の書庫ファイルのみを読み込む)" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="18,2,0,4" />
                                 </StackPanel>
 
                                 <DockPanel Margin="0,4,0,4">
@@ -174,12 +175,16 @@
 
                                 <CheckBox Content="画像読み込み時フォルダツリーに反映する" IsChecked="True" IsEnabled="False" />
 
-                                <WrapPanel Margin="0,4,0,4">
+                                <WrapPanel Margin="0,4,0,2">
                                     <RadioButton Content="しおりから開く" GroupName="StartupOpenMode" IsEnabled="False" />
                                     <RadioButton x:Name="OpenFromStartRadio" Content="先頭から開く" GroupName="StartupOpenMode" Checked="SettingControl_Changed" />
                                     <RadioButton Content="マーカーから開く" GroupName="StartupOpenMode" IsEnabled="False" />
                                     <RadioButton x:Name="OpenThumbnailRadio" Content="サムネイル表示" GroupName="StartupOpenMode" Checked="SettingControl_Changed" />
                                 </WrapPanel>
+                                <CheckBox x:Name="RememberPagePositionCheck"
+                                          Content="フォルダー・書庫ごとの表示位置を記憶する (モードA: オフ時は常に先頭ページから表示)"
+                                          Checked="SettingControl_Changed" Unchecked="SettingControl_Changed"
+                                          Margin="0,2,0,4" />
 
                                 <WrapPanel IsEnabled="False" Margin="0,2,0,0">
                                     <TextBlock Text="メニュー履歴保持数" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -205,6 +210,11 @@
                                     <CheckBox x:Name="SuppressConnectedPromptCheck"
                                               Content="以降、連結画像を検出しても問い合わせない"
                                               Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                </WrapPanel>
+                                <WrapPanel Margin="0,2,0,0">
+                                    <Button Content="連結画像検出 自動オン対象フォルダ設定(connected_folders.txt)を編集..."
+                                            Padding="8,2"
+                                            Click="EditConnectedFoldersConfig_Click" />
                                 </WrapPanel>
                             </StackPanel>
                         </GroupBox>
@@ -350,7 +360,13 @@
                                 <CheckBox x:Name="FullScreenHideCursorCheck" Content="フルスクリーン時、常時カーソル消去" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
                                 <CheckBox x:Name="FullScreenTopMostCheck" Content="フルスクリーン時、ウインドウを最前面に配置する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
                                 <CheckBox Content="フルスクリーン時、タスクバー領域を覆わない" IsEnabled="False" />
-                                <CheckBox Content="ページトラックバーをシーク時リアルタイムで画像表示する" IsEnabled="False" />
+                                <CheckBox x:Name="RealTimeSeekPreviewCheck" Content="ページトラックバーをシーク時リアルタイムで画像表示する" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" />
+                                <Separator Margin="0,4" />
+                                <WrapPanel Margin="0,2,0,0">
+                                    <TextBlock Text="メニュー・シークバースタイル:" VerticalAlignment="Center" Margin="0,0,12,0" FontWeight="SemiBold" />
+                                    <RadioButton x:Name="MenuStyleRetroRadio" Content="レトロ (MangaMeeya風)" GroupName="MenuStyleGroup" Checked="SettingControl_Changed" />
+                                    <RadioButton x:Name="MenuStyleModernRadio" Content="モダン (全機能・ロゴカラー)" GroupName="MenuStyleGroup" Checked="SettingControl_Changed" />
+                                </WrapPanel>
                             </StackPanel>
                         </GroupBox>
 

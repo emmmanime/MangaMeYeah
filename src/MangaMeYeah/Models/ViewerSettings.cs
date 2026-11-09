@@ -128,6 +128,8 @@ public class ViewerSettings
     public int SubfolderReadMode { get; set; } = 1; // 0=確認ダイアログ, 1=サブフォルダも読み込む, 2=サブフォルダは読み込まない
     public bool IncludeFolderArchivesAsSubfolders { get; set; } = true; // フォルダ内書庫もサブフォルダに含める
     public bool IncludeArchiveArchivesAsSubfolders { get; set; } = true; // 書庫内書庫もサブフォルダに含める
+    public bool OpenArchivesOnly { get; set; } = false; // フォルダー内・書庫内の書庫ファイル(ZIP等)のみを開く (デフォルト: オフ)
+    public bool RememberPagePosition { get; set; } = false; // フォルダー・書庫ごとの表示位置を記憶する (モードA, デフォルト: オフ)
     public string InitialFolderPath { get; set; } = string.Empty;
     public int StartupOpenMode { get; set; } = 1; // 1=先頭から開く, 3=サムネイル表示
     public bool AddBlankFirstPage { get; set; } = false;
@@ -142,7 +144,13 @@ public class ViewerSettings
     public string BackgroundColorHex { get; set; } = "#808080";
     public string BookshelfBackgroundColorHex { get; set; } = "#808080";
 
-    // その他設定 (Tab 4)
+    // その他設定 (Tab 4) & メニュー・シークバー設定
+    public bool IsModernMenuStyle { get; set; } = false; // false=レトロ(MangaMeeya風), true=モダン
+    public bool ShowSeekBar { get; set; } = false; // ウインドウ表示時の下部シークバー(ツールバー)常時表示
+    public int FullScreenSeekBarMode { get; set; } = 1; // 0=固定表示, 1=ポップアップ表示(デフォルト), 2=非表示
+    public bool SeekBarRightOrigin { get; set; } = false; // false=左原点(デフォルト), true=右原点
+    public bool RealTimeSeekPreview { get; set; } = true; // ページトラックバーをシーク時リアルタイムで画像表示する
+    public bool UsePhysicalPixelForOriginalSize { get; set; } = false; // false=Windows拡大率(DPI)を反映(MangaMeeya互換), true=実ピクセル等倍
     public bool ShowScrollBars { get; set; } = false;
     public bool ShowSubfolderInCaption { get; set; } = true;
     public bool ShowOsdText { get; set; } = true;
@@ -291,9 +299,17 @@ public class ViewerSettings
         sb.AppendLine($"SubfolderReadMode={SubfolderReadMode}");
         sb.AppendLine($"IncludeFolderArchivesAsSubfolders={(IncludeFolderArchivesAsSubfolders ? 1 : 0)}");
         sb.AppendLine($"IncludeArchiveArchivesAsSubfolders={(IncludeArchiveArchivesAsSubfolders ? 1 : 0)}");
+        sb.AppendLine($"OpenArchivesOnly={(OpenArchivesOnly ? 1 : 0)}");
+        sb.AppendLine($"RememberPagePosition={(RememberPagePosition ? 1 : 0)}");
         sb.AppendLine($"InitialFolderPath={InitialFolderPath}");
         sb.AppendLine($"StartupOpenMode={StartupOpenMode}");
         sb.AppendLine($"AddBlankFirstPage={(AddBlankFirstPage ? 1 : 0)}");
+        sb.AppendLine($"IsModernMenuStyle={(IsModernMenuStyle ? 1 : 0)}");
+        sb.AppendLine($"ShowSeekBar={(ShowSeekBar ? 1 : 0)}");
+        sb.AppendLine($"FullScreenSeekBarMode={FullScreenSeekBarMode}");
+        sb.AppendLine($"SeekBarRightOrigin={(SeekBarRightOrigin ? 1 : 0)}");
+        sb.AppendLine($"RealTimeSeekPreview={(RealTimeSeekPreview ? 1 : 0)}");
+        sb.AppendLine($"UsePhysicalPixelForOriginalSize={(UsePhysicalPixelForOriginalSize ? 1 : 0)}");
         sb.AppendLine($"DispScrollBar={(ShowScrollBars ? 1 : 0)}");
         sb.AppendLine($"CaptionText={(ShowSubfolderInCaption ? 1 : 0)}");
         sb.AppendLine($"DispTextInfo={(ShowOsdText ? 1 : 0)}");
@@ -514,6 +530,31 @@ public class ViewerSettings
                         break;
                     case "includearchivearchivesassubfolders":
                         settings.IncludeArchiveArchivesAsSubfolders = ParseBool(val, settings.IncludeArchiveArchivesAsSubfolders);
+                        break;
+                    case "openarchivesonly":
+                        settings.OpenArchivesOnly = ParseBool(val, settings.OpenArchivesOnly);
+                        break;
+                    case "rememberpageposition":
+                        settings.RememberPagePosition = ParseBool(val, settings.RememberPagePosition);
+                        break;
+                    case "ismodernmenustyle":
+                        settings.IsModernMenuStyle = ParseBool(val, settings.IsModernMenuStyle);
+                        break;
+                    case "showseekbar":
+                        settings.ShowSeekBar = ParseBool(val, settings.ShowSeekBar);
+                        break;
+                    case "fullscreenseekbarmode":
+                        settings.FullScreenSeekBarMode = Math.Clamp(ParseInt(val, settings.FullScreenSeekBarMode), 0, 2);
+                        break;
+                    case "seekbarrightorigin":
+                        settings.SeekBarRightOrigin = ParseBool(val, settings.SeekBarRightOrigin);
+                        break;
+                    case "realtimeseekpreview":
+                    case "dispseek":
+                        settings.RealTimeSeekPreview = ParseBool(val, settings.RealTimeSeekPreview);
+                        break;
+                    case "usephysicalpixelfororiginalsize":
+                        settings.UsePhysicalPixelForOriginalSize = ParseBool(val, settings.UsePhysicalPixelForOriginalSize);
                         break;
                     case "initialfolderpath":
                     case "initialbrowsefolder":

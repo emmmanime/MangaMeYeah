@@ -35,6 +35,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     // 強制2ページ表示インデックス (幅広画像等でもSpaceやメニューから2ページ表示を強制可能にする)
     private int _forcedTwoPageIndex = -1;
+    // Spaceや右長押しによる一時的な1ページ表示フラグ (次/前ページ移動時に自動で2ページ見開きへ復帰)
+    private bool _isTempSinglePage;
+
+    // シークバー・スライドショー再生の状態管理
+    private bool _isUpdatingSeekBar;
+    private DispatcherTimer? _slideshowTimer;
+    private bool _isSlideshowPlaying;
 
     // 連結画像自動検出の状態管理
     private int _lastEvaluatedConnectedIndex = -1;
@@ -352,9 +359,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             // Keep existing background
         }
 
-        var barVis = _settings.ShowScrollBars ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden;
-        ImageScrollViewer.HorizontalScrollBarVisibility = barVis;
-        ImageScrollViewer.VerticalScrollBarVisibility = barVis;
+        ApplyMenuAndSeekBarStyle();
+        SyncFullScreenScrollBarVisibility();
 
         if (!_settings.ShowOsdText)
         {
@@ -365,11 +371,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Topmost = _settings.FullScreenTopMost;
             ViewerRootGrid.Cursor = _settings.FullScreenHideCursor ? Cursors.None : Cursors.Arrow;
+            ViewerRootGrid.Margin = new Thickness(0);
+            MainMenuBar.Visibility = _fullScreenMenuMode == 0 ? Visibility.Visible : Visibility.Collapsed;
+            BottomSeekBarBorder.Visibility = _settings.FullScreenSeekBarMode == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else
         {
             Topmost = false;
             ViewerRootGrid.Cursor = Cursors.Arrow;
+            double topMargin = _settings.IsModernMenuStyle ? 22 : 20;
+            double bottomMargin = _settings.ShowSeekBar ? 28 : 0;
+            ViewerRootGrid.Margin = new Thickness(0, topMargin, 0, bottomMargin);
+            MainMenuBar.Visibility = Visibility.Visible;
+            BottomSeekBarBorder.Visibility = _settings.ShowSeekBar ? Visibility.Visible : Visibility.Collapsed;
         }
 
         ApplyLoupeSettings();
@@ -380,13 +394,163 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void ApplyMenuAndSeekBarStyle()
+    {
+        bool isModern = _settings.IsModernMenuStyle;
+
+        if (!isModern)
+        {
+            var retroFont = new FontFamily("MS UI Gothic");
+            MainMenuBar.FontFamily = retroFont;
+            MainMenuBar.FontSize = 12.0;
+            TextOptions.SetTextFormattingMode(MainMenuBar, TextFormattingMode.Display);
+
+            ViewerContextMenu.FontFamily = retroFont;
+            ViewerContextMenu.FontSize = 12.0;
+            TextOptions.SetTextFormattingMode(ViewerContextMenu, TextFormattingMode.Display);
+
+            HelpManualTopMenuItem.Visibility = Visibility.Collapsed;
+            HelpManualTopSeparator.Visibility = Visibility.Collapsed;
+            HelpManualBottomMenuItem.Visibility = Visibility.Visible;
+
+            MainOpenArchivesOnlyMenuItem.Visibility = Visibility.Collapsed;
+            CTX_OpenArchivesOnlyMenuItem.Visibility = Visibility.Collapsed;
+            MainMultiConnectMenu.Visibility = Visibility.Collapsed;
+            CTX_MultiConnectMenu.Visibility = Visibility.Collapsed;
+            MainRelatedJumpSeparator.Visibility = Visibility.Collapsed;
+            MainRelatedStartMenuItem.Visibility = Visibility.Collapsed;
+            MainRelatedEndMenuItem.Visibility = Visibility.Collapsed;
+            CTX_RelatedJumpSeparator.Visibility = Visibility.Collapsed;
+            CTX_RelatedStartMenuItem.Visibility = Visibility.Collapsed;
+            CTX_RelatedEndMenuItem.Visibility = Visibility.Collapsed;
+            MainOsdMenuItem.Visibility = Visibility.Collapsed;
+            MainGestureTrailMenuItem.Visibility = Visibility.Collapsed;
+            MainConnectedImageMenuItem.Visibility = Visibility.Collapsed;
+            CTX_ExtraSeparator.Visibility = Visibility.Collapsed;
+            CTX_OsdMenuItem.Visibility = Visibility.Collapsed;
+            CTX_GestureTrailMenuItem.Visibility = Visibility.Collapsed;
+            CTX_ConnectedImageMenuItem.Visibility = Visibility.Collapsed;
+
+            // レトロシークバースタイル (Windows クラシック 3D)
+            BottomSeekBarBorder.Background = new SolidColorBrush(Color.FromRgb(236, 233, 216));
+            BottomSeekBarBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(172, 168, 153));
+            SeekBarCounterBorder.Background = Brushes.White;
+            SeekBarCounterBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(127, 157, 185));
+            SeekBarCounterText.Foreground = Brushes.Black;
+            SeekBarCounterText.FontFamily = retroFont;
+            StyleSeekBarButtons(isModern: false);
+        }
+        else
+        {
+            var modernFont = new FontFamily("Yu Gothic UI, Meiryo UI, Segoe UI");
+            MainMenuBar.FontFamily = modernFont;
+            MainMenuBar.FontSize = 12.5;
+            TextOptions.SetTextFormattingMode(MainMenuBar, TextFormattingMode.Ideal);
+
+            ViewerContextMenu.FontFamily = modernFont;
+            ViewerContextMenu.FontSize = 12.5;
+            TextOptions.SetTextFormattingMode(ViewerContextMenu, TextFormattingMode.Ideal);
+
+            HelpManualTopMenuItem.Visibility = Visibility.Visible;
+            HelpManualTopSeparator.Visibility = Visibility.Visible;
+            HelpManualBottomMenuItem.Visibility = Visibility.Collapsed;
+
+            MainOpenArchivesOnlyMenuItem.Visibility = Visibility.Visible;
+            CTX_OpenArchivesOnlyMenuItem.Visibility = Visibility.Visible;
+            MainMultiConnectMenu.Visibility = Visibility.Visible;
+            CTX_MultiConnectMenu.Visibility = Visibility.Visible;
+            MainRelatedJumpSeparator.Visibility = Visibility.Visible;
+            MainRelatedStartMenuItem.Visibility = Visibility.Visible;
+            MainRelatedEndMenuItem.Visibility = Visibility.Visible;
+            CTX_RelatedJumpSeparator.Visibility = Visibility.Visible;
+            CTX_RelatedStartMenuItem.Visibility = Visibility.Visible;
+            CTX_RelatedEndMenuItem.Visibility = Visibility.Visible;
+            MainOsdMenuItem.Visibility = Visibility.Visible;
+            MainGestureTrailMenuItem.Visibility = Visibility.Visible;
+            MainConnectedImageMenuItem.Visibility = Visibility.Visible;
+            CTX_ExtraSeparator.Visibility = Visibility.Visible;
+            CTX_OsdMenuItem.Visibility = Visibility.Visible;
+            CTX_GestureTrailMenuItem.Visibility = Visibility.Visible;
+            CTX_ConnectedImageMenuItem.Visibility = Visibility.Visible;
+
+            // モダンシークバースタイル (MangaMeYeah! ロゴカラー: ダークネイビー #0F172A, シアン #00D2FF, ゴールド #FFBE0B)
+            BottomSeekBarBorder.Background = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            BottomSeekBarBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 210, 255));
+            SeekBarCounterBorder.Background = new SolidColorBrush(Color.FromRgb(30, 41, 59));
+            SeekBarCounterBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 210, 255));
+            SeekBarCounterText.Foreground = new SolidColorBrush(Color.FromRgb(255, 190, 11));
+            SeekBarCounterText.FontFamily = modernFont;
+            StyleSeekBarButtons(isModern: true);
+        }
+
+        SeekBarSlider.IsDirectionReversed = _settings.SeekBarRightOrigin;
+    }
+
+    private void StyleSeekBarButtons(bool isModern)
+    {
+        Button[] allBtns =
+        [
+            SeekBtnFolderTree, SeekBtnPrevFolder, SeekBtnPrevPage, SeekBtnPlayStop,
+            SeekBtnNextPage, SeekBtnNextFolder, SeekBtnOpenFile, SeekBtnFirstPage,
+            SeekBtnLastPage, SeekBtnBindingDir, SeekBtnLoupe, SeekBtnThumbnail,
+            SeekBtnBookList, SeekBtnFullScreen
+        ];
+
+        var bg = isModern
+            ? new SolidColorBrush(Color.FromRgb(30, 41, 59))
+            : new SolidColorBrush(Color.FromRgb(240, 240, 240));
+        var fg = isModern
+            ? new SolidColorBrush(Color.FromRgb(0, 210, 255))
+            : Brushes.Black;
+        var border = isModern
+            ? new SolidColorBrush(Color.FromRgb(56, 189, 248))
+            : new SolidColorBrush(Color.FromRgb(160, 160, 160));
+
+        foreach (var btn in allBtns)
+        {
+            btn.Background = bg;
+            btn.Foreground = fg;
+            btn.BorderBrush = border;
+        }
+    }
+
+    private void SyncFullScreenScrollBarVisibility()
+    {
+        if (_isFullScreen &&
+            (MainMenuBar.Visibility == Visibility.Visible || BottomSeekBarBorder.Visibility == Visibility.Visible))
+        {
+            // MangaMeeya 互換: フルスクリーンでメニューまたはシークバーがポップアップ表示されたタイミングで縦横スクロールバーを表示
+            ImageScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Visible;
+            ImageScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
+        }
+        else
+        {
+            var barVis = _settings.ShowScrollBars ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden;
+            ImageScrollViewer.HorizontalScrollBarVisibility = barVis;
+            ImageScrollViewer.VerticalScrollBarVisibility = barVis;
+        }
+    }
+
     #region ファイル・フォルダ・書庫読込と複数枚ページ表示 (1枚 / 横2 / 縦2 / 横3 / 縦3 / 横4 / 縦4 / 2×2)
 
     private void SaveCurrentResumeState()
     {
+        if (!_settings.RememberPagePosition)
+        {
+            return;
+        }
+
         if (!string.IsNullOrEmpty(_currentFolderPath) && _imageFiles.Count > 0 && _currentIndex >= 0 && _currentIndex < _imageFiles.Count)
         {
-            _settings.ResumePagePerLocation[_currentFolderPath] = _imageFiles[_currentIndex];
+            // 最終ページまで読み切った場合は記憶をリセットし、次回は先頭ページから開く (方式A)
+            if (_currentIndex + _lastDisplayedPageCount >= _imageFiles.Count)
+            {
+                _settings.ResumePagePerLocation.Remove(_currentFolderPath);
+            }
+            else
+            {
+                _settings.ResumePagePerLocation[_currentFolderPath] = _imageFiles[_currentIndex];
+            }
         }
     }
 
@@ -446,7 +610,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return GetLastPageGroupStartIndex();
         }
 
-        if (_settings.ResumePagePerLocation.TryGetValue(locationKey, out string? lastFile) && !string.IsNullOrEmpty(lastFile))
+        if (_settings.RememberPagePosition &&
+            _settings.ResumePagePerLocation.TryGetValue(locationKey, out string? lastFile) &&
+            !string.IsNullOrEmpty(lastFile))
         {
             int idx = _imageFiles.FindIndex(f =>
                 string.Equals(f, lastFile, StringComparison.OrdinalIgnoreCase) ||
@@ -494,7 +660,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (File.Exists(arch))
             {
                 _currentFolderPath = arch;
-                _imageFiles = ArchiveImageService.GetImagesInArchive(arch, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders);
+                _imageFiles = ArchiveImageService.GetImagesInArchive(arch, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders, _settings.OpenArchivesOnly);
                 int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
                 _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(arch, openAtLastPage);
             }
@@ -507,7 +673,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             if (!File.Exists(path)) return;
             _currentFolderPath = path;
-            _imageFiles = ArchiveImageService.GetImagesInArchive(path, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders);
+            _imageFiles = ArchiveImageService.GetImagesInArchive(path, _currentSortMode, _settings.IncludeArchiveArchivesAsSubfolders, _settings.OpenArchivesOnly);
             _currentIndex = DetermineInitialIndex(path, openAtLastPage);
         }
         else if (File.Exists(path))
@@ -522,7 +688,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 _currentSortMode,
                 includeSubfolders: includeSub,
                 includeFolderArchives: _settings.IncludeFolderArchivesAsSubfolders,
-                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders);
+                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders,
+                openArchivesOnly: _settings.OpenArchivesOnly);
             int idx = _imageFiles.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
             _currentIndex = idx >= 0 ? idx : DetermineInitialIndex(dir, openAtLastPage);
         }
@@ -535,7 +702,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 _currentSortMode,
                 includeSubfolders: includeSub,
                 includeFolderArchives: _settings.IncludeFolderArchivesAsSubfolders,
-                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders);
+                includeArchiveArchives: _settings.IncludeArchiveArchivesAsSubfolders,
+                openArchivesOnly: _settings.OpenArchivesOnly);
             _currentIndex = DetermineInitialIndex(path, openAtLastPage);
         }
         else
@@ -543,7 +711,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // connected_folders.txt に登録されている対象フォルダー配下を開いた場合は自動的に連結画像検出を ON にする
+        if (!string.IsNullOrEmpty(_currentFolderPath) && ConnectedFoldersConfigService.IsPathMatched(_currentFolderPath))
+        {
+            if (!_settings.AutoDetectConnectedImages)
+            {
+                _settings.AutoDetectConnectedImages = true;
+                ShowOsd("対象フォルダー設定により「連結画像検出」を自動ONにしました");
+            }
+        }
+
         _forcedTwoPageIndex = -1;
+        _isTempSinglePage = false;
         _lastEvaluatedConnectedIndex = -1;
         _activeConnectedOverride = null;
         _settings.LastOpenedPath = path;
@@ -558,6 +737,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageCanvasGrid.Children.Clear();
             Title = $"MangaMeYeah! - [{Path.GetFileName(_currentFolderPath)}] (画像なし)";
             ShowOsd("対応する画像ファイルが見つかりませんでした");
+            UpdateSeekBarState();
             UpdateMenuCheckStates();
             return;
         }
@@ -826,6 +1006,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             _currentDisplayedSlots = slotInfos;
             UpdateWindowTitle(indices, entries);
+            UpdateSeekBarState();
             UpdateMenuCheckStates();
 
             if (_imageInfoWindow != null && _imageInfoWindow.IsLoaded)
@@ -864,8 +1045,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_settings.ScaleMode == ScaleMode.OriginalSize)
         {
+            double dpiScaleX = 1.0;
+            double dpiScaleY = 1.0;
+            if (_settings.UsePhysicalPixelForOriginalSize)
+            {
+                var dpi = VisualTreeHelper.GetDpi(this);
+                if (dpi.DpiScaleX > 0) dpiScaleX = dpi.DpiScaleX;
+                if (dpi.DpiScaleY > 0) dpiScaleY = dpi.DpiScaleY;
+            }
             foreach (var e in entries)
-                results.Add((Math.Max(1, e.OriginalWidth), Math.Max(1, e.OriginalHeight)));
+            {
+                results.Add((Math.Max(1, e.OriginalWidth / dpiScaleX), Math.Max(1, e.OriginalHeight / dpiScaleY)));
+            }
             return results;
         }
 
@@ -1010,11 +1201,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_settings.AutoSpreadEnabled || _settings.PageMode == PageDisplayMode.AutoSpread)
         {
-            bool firstLandscape = _cacheEngine.IsLandscape(_imageFiles[index]);
-            bool secondLandscape = _cacheEngine.IsLandscape(_imageFiles[index + 1]);
+            var (w1, h1) = _cacheEngine.GetImageDimensionsFast(_imageFiles[index]);
+            var (w2, h2) = _cacheEngine.GetImageDimensionsFast(_imageFiles[index + 1]);
+            bool firstLandscape = w1 > h1;
+            bool secondLandscape = w2 > h2;
             if (firstLandscape || secondLandscape)
             {
                 return false;
+            }
+
+            // 縦長を基準に縮小した際の横幅が、ビューポートの50%を超える幅広画像の場合は見開き表示せず1ページ表示にする
+            double viewW = Math.Max(320, ViewerRootGrid.ActualWidth);
+            double viewH = Math.Max(240, ViewerRootGrid.ActualHeight);
+            if (viewW > viewH && h1 > 0 && h2 > 0)
+            {
+                double scaledW1 = ((double)w1 / h1) * viewH;
+                double scaledW2 = ((double)w2 / h2) * viewH;
+                if (scaledW1 > viewW * 0.505 || scaledW2 > viewW * 0.505)
+                {
+                    return false;
+                }
             }
         }
 
@@ -1133,7 +1339,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         string currentPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[_currentIndex]);
 
-        // 現在のクリエイターの最初のインデックスを探す
+        // 現在の関連画像並びの最初のインデックスを探す
         int firstIdx = _currentIndex;
         while (firstIdx > 0)
         {
@@ -1150,16 +1356,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_currentIndex > firstIdx)
         {
-            // 現在位置が途中または末尾なら、現在のクリエイターの先頭へジャンプ
+            // 現在位置が途中または末尾なら、現在の関連画像並びの先頭へジャンプ
             _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = firstIdx;
             RenderCurrentPage();
-            ShowOsd($"クリエイター先頭: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+            ShowOsd($"関連画像並びの先頭: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
         }
         else if (firstIdx > 0)
         {
-            // すでに先頭にいた場合、前のクリエイターの先頭へジャンプ
+            // すでに先頭にいた場合、前の関連画像並びの先頭へジャンプ
             int targetIdx = firstIdx - 1;
             string prevCreatorPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx]);
             while (targetIdx > 0)
@@ -1178,11 +1384,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _forcedTwoPageIndex = -1;
             _currentIndex = targetIdx;
             RenderCurrentPage();
-            ShowOsd($"前のクリエイター: {prevCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+            ShowOsd($"前の関連画像並びの先頭: {prevCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
         }
         else
         {
-            ShowOsd($"最初のクリエイターの先頭です: {currentPrefix} (1/{_imageFiles.Count})");
+            ShowOsd($"最初の関連画像並びの先頭です: {currentPrefix} (1/{_imageFiles.Count})");
         }
     }
 
@@ -1192,7 +1398,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         string currentPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[_currentIndex]);
 
-        // 現在のクリエイターの最後のインデックスを探す
+        // 現在の関連画像並びの最後のインデックスを探す
         int lastIdx = _currentIndex;
         while (lastIdx < _imageFiles.Count - 1)
         {
@@ -1209,37 +1415,124 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_currentIndex < lastIdx)
         {
-            // 現在位置が先頭または途中なら、現在のクリエイターの最後尾へジャンプ
+            // 現在位置が先頭または途中なら、現在の関連画像並びの最後尾へジャンプ
             _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = lastIdx;
             RenderCurrentPage();
-            ShowOsd($"クリエイター最後尾: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+            ShowOsd($"関連画像並び最後尾: {currentPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
         }
         else if (lastIdx < _imageFiles.Count - 1)
         {
-            // すでに最後尾にいた場合、次のクリエイターの先頭へスキップ
+            // すでに最後尾にいた場合、次の関連画像並びの先頭へスキップ
             int targetIdx = lastIdx + 1;
             string nextCreatorPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx]);
             _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = targetIdx;
             RenderCurrentPage();
-            ShowOsd($"次のクリエイター: {nextCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
+            ShowOsd($"次の関連画像並び: {nextCreatorPrefix} ({_currentIndex + 1}/{_imageFiles.Count})");
         }
         else
         {
-            ShowOsd($"最後のクリエイターの最後尾です: {currentPrefix} ({_imageFiles.Count}/{_imageFiles.Count})");
+            ShowOsd($"最後の関連画像並びの最後尾です: {currentPrefix} ({_imageFiles.Count}/{_imageFiles.Count})");
+        }
+    }
+
+    private static bool FileExistsOrArchiveExists(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath)) return false;
+        if (filePath.Contains('|'))
+        {
+            var (arch, _) = ArchiveImageService.SplitArchiveEntryPath(filePath);
+            return File.Exists(arch);
+        }
+        return File.Exists(filePath);
+    }
+
+    /// <summary>
+    /// MangaMeeya 互換: 閲覧中の画像ファイルが外部操作で移動・削除された場合、
+    /// 1回目のクリック時は画面上変化なし（エラーダイアログも出さずリストから欠損ファイルを除外）とし、
+    /// 2回目のクリックで次または前の有効な画像へ遷移できるようにする。
+    /// </summary>
+    private bool CheckAndPruneMissingCurrentFiles(out int prunedCurrentIndex)
+    {
+        prunedCurrentIndex = _currentIndex;
+        if (_imageFiles.Count == 0) return false;
+
+        bool currentMissing = false;
+        for (int i = 0; i < _lastDisplayedPageCount && _currentIndex + i < _imageFiles.Count; i++)
+        {
+            if (!FileExistsOrArchiveExists(_imageFiles[_currentIndex + i]))
+            {
+                currentMissing = true;
+                break;
+            }
+        }
+
+        if (!currentMissing)
+        {
+            return false;
+        }
+
+        // 現在位置より前に何枚有効なファイルが残っているかを計算
+        int validBeforeCurrent = 0;
+        for (int i = 0; i < _currentIndex && i < _imageFiles.Count; i++)
+        {
+            if (FileExistsOrArchiveExists(_imageFiles[i]))
+            {
+                validBeforeCurrent++;
+            }
+        }
+
+        _imageFiles.RemoveAll(f => !FileExistsOrArchiveExists(f));
+        prunedCurrentIndex = _imageFiles.Count > 0
+            ? Math.Clamp(validBeforeCurrent, 0, _imageFiles.Count - 1)
+            : 0;
+        return true;
+    }
+
+    private void RestoreMultiPageIfTempSingle()
+    {
+        if (_isTempSinglePage)
+        {
+            _isTempSinglePage = false;
+            _settings.PageMode = _savedMultiPageMode != PageDisplayMode.SinglePage
+                ? _savedMultiPageMode
+                : PageDisplayMode.TwoPage;
         }
     }
 
     internal void NextPage()
     {
         if (_imageFiles.Count == 0) return;
-        int step = Math.Max(1, _lastDisplayedPageCount * Math.Max(1, _settings.StepNextPrevCount));
+
+        // 閲覧中のファイルが外部で移動・削除された場合: 1回目のクリックは画面変化なし(内部で欠損除外のみ)、2回目で次の画像を表示
+        if (CheckAndPruneMissingCurrentFiles(out int prunedIdx))
+        {
+            _currentIndex = prunedIdx;
+            _lastDisplayedPageCount = 0; // 次回クリック時に prunedIdx の画像をそのまま表示できるようステップ0化
+            return;
+        }
+
+        RestoreMultiPageIfTempSingle();
+
+        int step = _lastDisplayedPageCount == 0
+            ? 0
+            : Math.Max(1, _lastDisplayedPageCount * Math.Max(1, _settings.StepNextPrevCount));
+
+        // 遷移先が外部削除されていた場合も安全にスキップ
+        while (_currentIndex + step < _imageFiles.Count && !FileExistsOrArchiveExists(_imageFiles[_currentIndex + step]))
+        {
+            _imageFiles.RemoveAt(_currentIndex + step);
+        }
+
         if (_currentIndex + step < _imageFiles.Count)
         {
-            _navigationHistory.Push(_currentIndex);
+            if (step > 0)
+            {
+                _navigationHistory.Push(_currentIndex);
+            }
             _forcedTwoPageIndex = -1;
             _currentIndex += step;
             RenderCurrentPage();
@@ -1278,6 +1571,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     internal void PrevPage()
     {
         if (_imageFiles.Count == 0) return;
+
+        // 閲覧中のファイルが外部で移動・削除された場合: 1回目の右クリックは画面変化なし(内部で欠損除外のみ)、2回目で前の画像を表示
+        if (CheckAndPruneMissingCurrentFiles(out int prunedIdx))
+        {
+            _currentIndex = prunedIdx;
+            return;
+        }
+
+        RestoreMultiPageIfTempSingle();
+
         if (_currentIndex <= 0)
         {
             if (_isTransitioningFolder) return;
@@ -1312,10 +1615,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _forcedTwoPageIndex = -1;
 
         // 1. 直前のナビゲーション履歴があれば正確に元の開始インデックスに戻す (4枚連結などの逆順復元)
-        if (_navigationHistory.Count > 0)
+        while (_navigationHistory.Count > 0)
         {
             int prevIdx = _navigationHistory.Pop();
-            if (prevIdx < _currentIndex && prevIdx >= 0)
+            if (prevIdx < _currentIndex && prevIdx >= 0 && prevIdx < _imageFiles.Count && FileExistsOrArchiveExists(_imageFiles[prevIdx]))
             {
                 _currentIndex = prevIdx;
                 RenderCurrentPage();
@@ -1415,6 +1718,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SetPageDisplayMode(PageDisplayMode mode, string label, bool forceTwoPageAtCurrent = false)
     {
+        _isTempSinglePage = false;
         _settings.PageMode = mode;
         _activeConnectedOverride = null;
         _forcedTwoPageIndex = forceTwoPageAtCurrent ? _currentIndex : -1;
@@ -1428,6 +1732,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_settings.PageMode == PageDisplayMode.SinglePage || _lastDisplayedPageCount == 1)
         {
             // 現在1ページ表示中 → 直前の複数枚モード（Vertical2、TwoPage等）へ復帰
+            _isTempSinglePage = false;
             _settings.PageMode = _savedMultiPageMode != PageDisplayMode.SinglePage
                 ? _savedMultiPageMode
                 : PageDisplayMode.TwoPage;
@@ -1436,11 +1741,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            // 現在複数枚表示中（縦2枚、見開き2枚、4枚など）→ 現在のモードを記憶し、1枚ずれ調整用の1ページ表示へ切替
+            // 現在複数枚表示中（縦2枚、見開き2枚、4枚など）→ 現在のモードを記憶し、一時的な1ページ表示へ切替 (次/前ページ移動で自動復帰)
             _savedMultiPageMode = _settings.PageMode;
+            _isTempSinglePage = true;
             _forcedTwoPageIndex = -1;
             _settings.PageMode = PageDisplayMode.SinglePage;
-            ShowOsd("1ページ表示 (1枚ずれ調整用: 次へ進んで再切替)");
+            ShowOsd("1ページ表示 (ページ移動で見開きに自動復帰)");
         }
         RenderCurrentPage();
     }
@@ -1501,7 +1807,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ViewerRootGrid.Cursor = _settings.FullScreenHideCursor ? Cursors.None : Cursors.Arrow;
             ViewerRootGrid.Margin = new Thickness(0);
             MainMenuBar.Visibility = _fullScreenMenuMode == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ShowOsd("フルスクリーン表示 (画面上端にマウス移動でメニュー表示 / ↑ジェスチャで解除)");
+            BottomSeekBarBorder.Visibility = _settings.FullScreenSeekBarMode == 0 ? Visibility.Visible : Visibility.Collapsed;
+            SyncFullScreenScrollBarVisibility();
+            ShowOsd("フルスクリーン表示 (画面上端でメニュー / 下端でシークバー表示 / ↑ジェスチャで解除)");
         }
         else
         {
@@ -1517,8 +1825,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Width = _savedWindowRect.Width;
                 Height = _savedWindowRect.Height;
             }
-            ViewerRootGrid.Margin = new Thickness(0, 22, 0, 0);
+            double topMargin = _settings.IsModernMenuStyle ? 22 : 20;
+            double bottomMargin = _settings.ShowSeekBar ? 28 : 0;
+            ViewerRootGrid.Margin = new Thickness(0, topMargin, 0, bottomMargin);
             MainMenuBar.Visibility = Visibility.Visible;
+            BottomSeekBarBorder.Visibility = _settings.ShowSeekBar ? Visibility.Visible : Visibility.Collapsed;
+            SyncFullScreenScrollBarVisibility();
             ShowOsd("ウィンドウ表示");
         }
         UpdateMenuCheckStates();
@@ -1536,35 +1848,70 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 MainMenuBar.Visibility = Visibility.Collapsed;
             }
+            if (BottomSeekBarBorder.Visibility == Visibility.Visible && _settings.FullScreenSeekBarMode == 1)
+            {
+                BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+            }
+            SyncFullScreenScrollBarVisibility();
             return;
         }
 
+        // 1. 上部メニューバーのポップアップ制御
         if (_fullScreenMenuMode == 0)
         {
             MainMenuBar.Visibility = Visibility.Visible;
-            return;
         }
-        if (_fullScreenMenuMode == 2)
+        else if (_fullScreenMenuMode == 2)
         {
             MainMenuBar.Visibility = Visibility.Collapsed;
-            return;
+        }
+        else
+        {
+            if (mousePosInRoot.Y <= 22)
+            {
+                if (MainMenuBar.Visibility != Visibility.Visible)
+                {
+                    MainMenuBar.Visibility = Visibility.Visible;
+                }
+            }
+            else if (mousePosInRoot.Y > 28 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
+            {
+                if (MainMenuBar.Visibility == Visibility.Visible)
+                {
+                    MainMenuBar.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
-        // ポップアップ表示モード: 画面最上部 (Y <= 22px) にマウスを移動するとプルダウン表示
-        if (mousePosInRoot.Y <= 22)
+        // 2. 最下行シークバー (ツールバー) のポップアップ制御
+        double viewH = ViewerRootGrid.ActualHeight;
+        if (_settings.FullScreenSeekBarMode == 0)
         {
-            if (MainMenuBar.Visibility != Visibility.Visible)
+            BottomSeekBarBorder.Visibility = Visibility.Visible;
+        }
+        else if (_settings.FullScreenSeekBarMode == 2)
+        {
+            BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+        }
+        else if (viewH > 60)
+        {
+            if (mousePosInRoot.Y >= viewH - 28)
             {
-                MainMenuBar.Visibility = Visibility.Visible;
+                if (BottomSeekBarBorder.Visibility != Visibility.Visible)
+                {
+                    BottomSeekBarBorder.Visibility = Visibility.Visible;
+                }
+            }
+            else if (mousePosInRoot.Y < viewH - 36 && !BottomSeekBarBorder.IsKeyboardFocusWithin && !BottomSeekBarBorder.IsMouseOver)
+            {
+                if (BottomSeekBarBorder.Visibility == Visibility.Visible)
+                {
+                    BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+                }
             }
         }
-        else if (mousePosInRoot.Y > 28 && !MainMenuBar.IsKeyboardFocusWithin && !MainMenuBar.IsMouseOver)
-        {
-            if (MainMenuBar.Visibility == Visibility.Visible)
-            {
-                MainMenuBar.Visibility = Visibility.Collapsed;
-            }
-        }
+
+        SyncFullScreenScrollBarVisibility();
     }
 
     private void MainMenuBar_MouseLeave(object sender, MouseEventArgs e)
@@ -1575,6 +1922,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (pos.Y > 20)
             {
                 MainMenuBar.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
+            }
+        }
+    }
+
+    private void BottomSeekBarBorder_MouseLeave(object sender, MouseEventArgs e)
+    {
+        if (_isFullScreen && _settings.FullScreenSeekBarMode == 1 && !BottomSeekBarBorder.IsKeyboardFocusWithin)
+        {
+            Point pos = e.GetPosition(ViewerRootGrid);
+            if (pos.Y < ViewerRootGrid.ActualHeight - 32)
+            {
+                BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
             }
         }
     }
@@ -1583,9 +1944,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_settings.ScaleMode == ScaleMode.AlignHeightTwoPage)
         {
-            _settings.ScaleMode = ScaleMode.FixedScale;
-            int pct = (int)Math.Round(_settings.FixedZoomFactor * 100);
-            ShowOsd($"スケール: 倍率固定(デフォルト) ({pct}%)");
+            _settings.ScaleMode = ScaleMode.OriginalSize;
+            ShowOsd("スケール: 原寸サイズで表示");
         }
         else
         {
@@ -1599,16 +1959,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_settings.ResetScaleOnSameMode && _settings.ScaleMode == mode)
         {
-            if (mode == ScaleMode.FixedScale)
+            if (mode == ScaleMode.OriginalSize)
             {
                 _settings.ScaleMode = ScaleMode.AlignHeightTwoPage;
                 ShowOsd("スケール: 縦サイズを揃える(2ページ表示用)");
             }
             else
             {
-                _settings.ScaleMode = ScaleMode.FixedScale;
-                int pct = (int)Math.Round(_settings.FixedZoomFactor * 100);
-                ShowOsd($"スケール: 倍率固定(デフォルト) ({pct}%)");
+                _settings.ScaleMode = ScaleMode.OriginalSize;
+                ShowOsd("スケール: 原寸サイズで表示");
             }
             RenderCurrentPage();
             return;
@@ -1638,11 +1997,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         LoupeOverlayCanvas.Visibility = _isLoupeActive ? Visibility.Visible : Visibility.Collapsed;
         if (_isLoupeActive)
         {
-            if (_settings.SuppressPopupsDuringLoupe && _isFullScreen && _fullScreenMenuMode == 1)
+            if (_settings.SuppressPopupsDuringLoupe && _isFullScreen)
             {
-                MainMenuBar.Visibility = Visibility.Collapsed;
+                if (_fullScreenMenuMode == 1) MainMenuBar.Visibility = Visibility.Collapsed;
+                if (_settings.FullScreenSeekBarMode == 1) BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
             }
             ApplyLoupeSettings();
+            // ルーペON時はフル解像度ビットマップをデコードして鮮明に拡大表示させる
+            if (_imageFiles.Count > 0)
+            {
+                RenderCurrentPage();
+                PageCanvasGrid.UpdateLayout();
+            }
             UpdateLoupePosition(Mouse.GetPosition(ViewerRootGrid));
             ShowOsd($"ルーペ ON ({(int)(_settings.LoupeScale * 100)}%) - 右ボタン+ホイールで倍率変更");
         }
@@ -1683,26 +2050,77 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (!_isLoupeActive) return;
 
         double diameter = _settings.LoupeRadius * 2;
+        double viewW = ViewerRootGrid.ActualWidth;
+        double viewH = ViewerRootGrid.ActualHeight;
+
+        // 1. マウスクリック・移動位置をルーペの中心に配置
         double left = mousePosInRoot.X - _settings.LoupeRadius;
         double top = mousePosInRoot.Y - _settings.LoupeRadius;
 
-        if (_settings.LoupeClampToScreen)
+        if (_settings.LoupeClampToScreen && viewW > 0 && viewH > 0)
         {
-            left = Math.Clamp(left, 0, Math.Max(0, ViewerRootGrid.ActualWidth - diameter));
-            top = Math.Clamp(top, 0, Math.Max(0, ViewerRootGrid.ActualHeight - diameter));
+            // 外枠の画面端クランプ (ルーペサイズが画面サイズを超える場合は、クリック位置が画面中央より上/下・左/右かで端揃え)
+            if (diameter <= viewW)
+            {
+                left = Math.Clamp(left, 0, viewW - diameter);
+            }
+            else
+            {
+                left = mousePosInRoot.X < viewW / 2.0 ? 0 : viewW - diameter;
+            }
+
+            if (diameter <= viewH)
+            {
+                top = Math.Clamp(top, 0, viewH - diameter);
+            }
+            else
+            {
+                top = mousePosInRoot.Y < viewH / 2.0 ? 0 : viewH - diameter;
+            }
         }
 
         Canvas.SetLeft(LoupeBorder, left);
         Canvas.SetTop(LoupeBorder, top);
 
+        // 2. ルーペ内部の拡大領域 (Viewbox) の計算と画像端クランプ
         Point posInCanvas = ViewerRootGrid.TranslatePoint(mousePosInRoot, PageCanvasGrid);
-        double viewBoxW = diameter / _settings.LoupeScale;
-        double viewBoxH = diameter / _settings.LoupeScale;
-        LoupeVisualBrush.Viewbox = new Rect(
-            posInCanvas.X - viewBoxW / 2,
-            posInCanvas.Y - viewBoxH / 2,
-            viewBoxW,
-            viewBoxH);
+        double scale = Math.Max(0.25, _settings.LoupeScale);
+        double viewBoxW = diameter / scale;
+        double viewBoxH = diameter / scale;
+        double vbX = posInCanvas.X - viewBoxW / 2.0;
+        double vbY = posInCanvas.Y - viewBoxH / 2.0;
+
+        if (_settings.LoupeClampToScreen)
+        {
+            double canvasW = PageCanvasGrid.ActualWidth;
+            double canvasH = PageCanvasGrid.ActualHeight;
+
+            if (canvasW > 0)
+            {
+                if (viewBoxW <= canvasW)
+                {
+                    vbX = Math.Clamp(vbX, 0, canvasW - viewBoxW);
+                }
+                else
+                {
+                    vbX = mousePosInRoot.X < viewW / 2.0 ? 0 : canvasW - viewBoxW;
+                }
+            }
+
+            if (canvasH > 0)
+            {
+                if (viewBoxH <= canvasH)
+                {
+                    vbY = Math.Clamp(vbY, 0, canvasH - viewBoxH);
+                }
+                else
+                {
+                    vbY = mousePosInRoot.Y < viewH / 2.0 ? 0 : canvasH - viewBoxH;
+                }
+            }
+        }
+
+        LoupeVisualBrush.Viewbox = new Rect(vbX, vbY, viewBoxW, viewBoxH);
     }
 
     #endregion
@@ -1735,7 +2153,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             targets.Add(_imageFiles[_currentIndex + i]);
         }
 
-        var (_, message) = QuickSaveService.ExecuteQuickSave(slotNumber, targets, _settings);
+        var (_, message) = QuickSaveService.ExecuteQuickSave(slotNumber, targets, _settings, this);
         ShowOsd(message);
     }
 
@@ -1945,7 +2363,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             OpenQuickSaveSettingsDialog();
         }
 
-        var (_, message) = QuickSaveService.ExecuteQuickSave(slotNumber, selectedPaths, _settings);
+        var (_, message) = QuickSaveService.ExecuteQuickSave(slotNumber, selectedPaths, _settings, this);
         ShowOsd(message);
     }
 
@@ -2320,17 +2738,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             double step = Math.Max(48, ViewerRootGrid.ActualHeight * 0.25);
             if (e.Delta > 0)
             {
+                // 縦スクロール可能な状態では最上端(0)でピタッと止まり、前ページへは遷移しない (MangaMeeya互換)
                 if (ImageScrollViewer.VerticalOffset > 0)
+                {
                     ImageScrollViewer.ScrollToVerticalOffset(Math.Max(0, ImageScrollViewer.VerticalOffset - step));
-                else
-                    PrevPage();
+                }
             }
             else
             {
+                // 縦スクロール可能な状態では最下端(ScrollableHeight)でピタッと止まり、次ページへは遷移しない (MangaMeeya互換)
                 if (ImageScrollViewer.VerticalOffset < ImageScrollViewer.ScrollableHeight)
+                {
                     ImageScrollViewer.ScrollToVerticalOffset(Math.Min(ImageScrollViewer.ScrollableHeight, ImageScrollViewer.VerticalOffset + step));
-                else
-                    NextPage();
+                }
             }
         }
         else
@@ -2626,10 +3046,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     279 => _settings.SpreadDirection == SpreadDirection.RightToLeft,
                     131 => _settings.AutoSpreadEnabled,
                     119 => _isFullScreen,
+                    377 => _settings.FullScreenSeekBarMode == 0,
+                    378 => _settings.FullScreenSeekBarMode == 1,
+                    379 => _settings.FullScreenSeekBarMode == 2,
                     380 => _fullScreenMenuMode == 0,
                     381 => _fullScreenMenuMode == 1,
                     382 => _fullScreenMenuMode == 2,
                     172 => _isLoupeActive,
+                    40031 => _settings.ShowSeekBar,
                     40100 => _settings.ScaleMode == ScaleMode.FixedScale,
                     40101 => _settings.ScaleMode == ScaleMode.FitEither,
                     40102 => _settings.ScaleMode == ScaleMode.FitWindow,
@@ -2644,6 +3068,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     >= 344 and <= 349 => (int)_settings.FolderSort == id,
                     40300 => _settings.ShowOsdText,
                     40301 => _settings.ShowGestureTrail,
+                    40320 => _settings.OpenArchivesOnly,
+                    40330 => !_settings.IsModernMenuStyle,
+                    40331 => _settings.IsModernMenuStyle,
                     _ => null
                 };
 
@@ -2752,6 +3179,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             case 131: // 自動見開き表示
                 _settings.AutoSpreadEnabled = !_settings.AutoSpreadEnabled;
                 _forcedTwoPageIndex = -1;
+                _isTempSinglePage = false;
+                // 1ページ表示中に「自動見開き表示」をONにした場合は、即座に見開き評価モード(TwoPage)へ移行し次画像と結合判定する
+                if (_settings.AutoSpreadEnabled && _settings.PageMode == PageDisplayMode.SinglePage)
+                {
+                    _settings.PageMode = PageDisplayMode.TwoPage;
+                }
+                _settings.Save();
                 ShowOsd(_settings.AutoSpreadEnabled ? "自動見開き表示: ON" : "自動見開き表示: OFF");
                 RenderCurrentPage();
                 return;
@@ -2768,27 +3202,60 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             case 119: // フルスクリーン
                 ToggleFullScreen();
                 return;
+            case 377: // フルスクリーン時: ツールバー(シークバー)固定表示
+                _settings.FullScreenSeekBarMode = 0;
+                _settings.Save();
+                if (_isFullScreen) BottomSeekBarBorder.Visibility = Visibility.Visible;
+                SyncFullScreenScrollBarVisibility();
+                UpdateMenuCheckStates();
+                ShowOsd("フルスクリーン時ツールバー(シークバー): 固定表示");
+                return;
+            case 378: // フルスクリーン時: ツールバー(シークバー)ポップアップ表示
+                _settings.FullScreenSeekBarMode = 1;
+                _settings.Save();
+                if (_isFullScreen) BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
+                UpdateMenuCheckStates();
+                ShowOsd("フルスクリーン時ツールバー(シークバー): ポップアップ表示");
+                return;
+            case 379: // フルスクリーン時: ツールバー(シークバー)非表示
+                _settings.FullScreenSeekBarMode = 2;
+                _settings.Save();
+                if (_isFullScreen) BottomSeekBarBorder.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
+                UpdateMenuCheckStates();
+                ShowOsd("フルスクリーン時ツールバー(シークバー): 非表示");
+                return;
             case 380: // フルスクリーン時: メニュー固定表示
                 _fullScreenMenuMode = 0;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Visible;
+                SyncFullScreenScrollBarVisibility();
                 UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: 固定表示");
                 return;
             case 381: // フルスクリーン時: メニューポップアップ表示
                 _fullScreenMenuMode = 1;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
                 UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: ポップアップ表示");
                 return;
             case 382: // フルスクリーン時: メニュー非表示
                 _fullScreenMenuMode = 2;
                 if (_isFullScreen) MainMenuBar.Visibility = Visibility.Collapsed;
+                SyncFullScreenScrollBarVisibility();
                 UpdateMenuCheckStates();
                 ShowOsd("フルスクリーン時メニュー: 非表示");
                 return;
             case 172: // ルーペ表示
                 ToggleLoupe();
                 UpdateMenuCheckStates();
+                return;
+            case 40031: // ツールバー(シークバー)表示
+                _settings.ShowSeekBar = !_settings.ShowSeekBar;
+                _settings.Save();
+                ApplyRuntimePreferences();
+                ShowOsd(_settings.ShowSeekBar ? "ツールバー(シークバー)表示: ON" : "ツールバー(シークバー)表示: OFF");
                 return;
             case 40100:
                 SetScaleMode(ScaleMode.FixedScale, $"倍率固定(デフォルト) ({(int)Math.Round(_settings.FixedZoomFactor * 100)}%)");
@@ -2941,6 +3408,31 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 UpdateMenuCheckStates();
                 ShowOsd(_settings.ShowGestureTrail ? "ジェスチャー軌跡表示: ON" : "ジェスチャー軌跡表示: OFF");
                 return;
+            case 40320: // 書庫のみ開く
+                _settings.OpenArchivesOnly = !_settings.OpenArchivesOnly;
+                _settings.Save();
+                UpdateMenuCheckStates();
+                ShowOsd(_settings.OpenArchivesOnly ? "書庫のみ開く: ON (フォルダ内のバラ画像を除外)" : "書庫のみ開く: OFF");
+                if (!string.IsNullOrEmpty(_currentFolderPath))
+                {
+                    OpenPath(_currentFolderPath);
+                }
+                return;
+            case 40330: // メニュースタイル: レトロ (MangaMeeya互換)
+                _settings.IsModernMenuStyle = false;
+                _settings.Save();
+                ApplyRuntimePreferences();
+                ShowOsd("メニュー・シークバースタイル: レトロ (MangaMeeya互換)");
+                return;
+            case 40331: // メニュースタイル: モダン (MangaMeYeah!拡張)
+                _settings.IsModernMenuStyle = true;
+                _settings.Save();
+                ApplyRuntimePreferences();
+                ShowOsd("メニュー・シークバースタイル: モダン");
+                return;
+            case 155: // 指定ページへ
+                PromptJumpToPage();
+                return;
         }
 
         string featureName = menuItem.Tag as string ?? menuItem.Header?.ToString() ?? "選択された機能";
@@ -2951,6 +3443,196 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
+
+    #region 最下行シークバー (ツールバー) & スライドショー制御
+
+    private void UpdateSeekBarState()
+    {
+        _isUpdatingSeekBar = true;
+        try
+        {
+            int total = _imageFiles.Count;
+            if (total <= 0)
+            {
+                SeekBarSlider.Minimum = 1;
+                SeekBarSlider.Maximum = 1;
+                SeekBarSlider.Value = 1;
+                SeekBarSlider.IsEnabled = false;
+                SeekBarCounterText.Text = "0/0";
+            }
+            else
+            {
+                int pageNum = Math.Clamp(_currentIndex + 1, 1, total);
+                SeekBarSlider.Minimum = 1;
+                SeekBarSlider.Maximum = Math.Max(1, total);
+                SeekBarSlider.Value = pageNum;
+                SeekBarSlider.IsEnabled = total > 1;
+                SeekBarCounterText.Text = $"{pageNum}/{total}";
+            }
+            SeekBarSlider.IsDirectionReversed = _settings.SeekBarRightOrigin;
+        }
+        finally
+        {
+            _isUpdatingSeekBar = false;
+        }
+    }
+
+    private void SeekBarSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isUpdatingSeekBar || !IsLoaded || _imageFiles.Count == 0) return;
+
+        int targetPage = Math.Clamp((int)Math.Round(e.NewValue), 1, _imageFiles.Count);
+        SeekBarCounterText.Text = $"{targetPage}/{_imageFiles.Count}";
+
+        if (_settings.RealTimeSeekPreview || Mouse.LeftButton != MouseButtonState.Pressed)
+        {
+            int targetIdx = targetPage - 1;
+            if (targetIdx != _currentIndex)
+            {
+                _forcedTwoPageIndex = -1;
+                _currentIndex = targetIdx;
+                RenderCurrentPage();
+            }
+        }
+    }
+
+    private void SeekBarSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isUpdatingSeekBar || _imageFiles.Count == 0) return;
+        int targetIdx = Math.Clamp((int)Math.Round(SeekBarSlider.Value) - 1, 0, _imageFiles.Count - 1);
+        if (targetIdx != _currentIndex)
+        {
+            _forcedTwoPageIndex = -1;
+            _currentIndex = targetIdx;
+            RenderCurrentPage();
+        }
+    }
+
+    private void SeekBarCounterBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        PromptJumpToPage();
+        e.Handled = true;
+    }
+
+    private void PromptJumpToPage()
+    {
+        if (_imageFiles.Count == 0) return;
+
+        var win = new Window
+        {
+            Title = "指定ページへ移動",
+            Width = 300,
+            Height = 145,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.ToolWindow,
+            Background = new SolidColorBrush(Color.FromRgb(240, 240, 240))
+        };
+
+        var root = new StackPanel { Margin = new Thickness(14, 12, 14, 12) };
+        root.Children.Add(new TextBlock
+        {
+            Text = $"移動先のページ番号を入力 (1 〜 {_imageFiles.Count}):",
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+
+        var tb = new TextBox
+        {
+            Text = (_currentIndex + 1).ToString(),
+            Padding = new Thickness(4, 2, 4, 2),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        tb.SelectAll();
+        root.Children.Add(tb);
+
+        var btnRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var okBtn = new Button { Content = "移動", Width = 72, Height = 24, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
+        var cancelBtn = new Button { Content = "キャンセル", Width = 72, Height = 24, IsCancel = true };
+        okBtn.Click += (_, _) => { win.DialogResult = true; win.Close(); };
+        btnRow.Children.Add(okBtn);
+        btnRow.Children.Add(cancelBtn);
+        root.Children.Add(btnRow);
+        win.Content = root;
+        win.Loaded += (_, _) => tb.Focus();
+
+        if (win.ShowDialog() == true && int.TryParse(tb.Text.Trim(), out int page))
+        {
+            int targetIdx = Math.Clamp(page - 1, 0, _imageFiles.Count - 1);
+            _forcedTwoPageIndex = -1;
+            _currentIndex = targetIdx;
+            RenderCurrentPage();
+            ShowOsd($"指定ページ移動: {targetIdx + 1}/{_imageFiles.Count}");
+        }
+    }
+
+    private void ToggleSlideshowPlayStop()
+    {
+        if (_imageFiles.Count == 0)
+        {
+            ShowOsd("画像が開かれていません");
+            return;
+        }
+
+        _isSlideshowPlaying = !_isSlideshowPlaying;
+        if (_isSlideshowPlaying)
+        {
+            if (_slideshowTimer == null)
+            {
+                _slideshowTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                _slideshowTimer.Tick += (_, _) =>
+                {
+                    if (_imageFiles.Count == 0 || _currentIndex + _lastDisplayedPageCount >= _imageFiles.Count)
+                    {
+                        StopSlideshow();
+                        ShowOsd("スライドショー終了 (最終ページ)");
+                        return;
+                    }
+                    NextPage();
+                };
+            }
+            _slideshowTimer.Start();
+            SeekBtnPlayStop.Content = "■";
+            ShowOsd("スライドショー再生開始 (2.5秒間隔)");
+        }
+        else
+        {
+            StopSlideshow();
+            ShowOsd("スライドショー停止");
+        }
+    }
+
+    private void StopSlideshow()
+    {
+        _isSlideshowPlaying = false;
+        _slideshowTimer?.Stop();
+        SeekBtnPlayStop.Content = "▶/■";
+    }
+
+    private void SeekBtnFolderTree_Click(object sender, RoutedEventArgs e) => ShowOpenFolderDialog();
+    private void SeekBtnPrevFolder_Click(object sender, RoutedEventArgs e) => MoveToSiblingFolder(-1);
+    private void SeekBtnPrevPage_Click(object sender, RoutedEventArgs e) => PrevPage();
+    private void SeekBtnPlayStop_Click(object sender, RoutedEventArgs e) => ToggleSlideshowPlayStop();
+    private void SeekBtnNextPage_Click(object sender, RoutedEventArgs e) => NextPage();
+    private void SeekBtnNextFolder_Click(object sender, RoutedEventArgs e) => MoveToSiblingFolder(+1);
+    private void SeekBtnOpenFile_Click(object sender, RoutedEventArgs e) => ShowOpenFileDialog();
+    private void SeekBtnFirstPage_Click(object sender, RoutedEventArgs e) => GoToFirstPage();
+    private void SeekBtnLastPage_Click(object sender, RoutedEventArgs e) => GoToLastPage();
+    private void SeekBtnBindingDir_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.SpreadDirection = _settings.SpreadDirection == SpreadDirection.RightToLeft
+            ? SpreadDirection.LeftToRight
+            : SpreadDirection.RightToLeft;
+        _settings.Save();
+        ShowOsd(_settings.SpreadDirection == SpreadDirection.RightToLeft ? "見開き方向: 右開き" : "見開き方向: 左開き");
+        RenderCurrentPage();
+    }
+    private void SeekBtnLoupe_Click(object sender, RoutedEventArgs e) => ToggleLoupe();
+    private void SeekBtnThumbnail_Click(object sender, RoutedEventArgs e) => OpenThumbnailView(4, 240);
+    private void SeekBtnBookList_Click(object sender, RoutedEventArgs e) => OpenThumbnailView(0, _settings.CustomThumbnailSize);
+    private void SeekBtnFullScreen_Click(object sender, RoutedEventArgs e) => ToggleFullScreen();
+
+    #endregion
 
     private static int ParseMenuId(string uid)
     {

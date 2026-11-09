@@ -325,64 +325,86 @@ public sealed class PageCacheEngine : IDisposable
         }
         catch
         {
-            using var fallbackStream = OpenImageStream(filePath);
-            var bmp = new BitmapImage();
-            bmp.BeginInit();
-            bmp.CacheOption = BitmapCacheOption.OnLoad;
-            bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-            bmp.StreamSource = fallbackStream;
-            if (targetMaxWidth > 0 && origW > targetMaxWidth)
+            try
             {
-                bmp.DecodePixelWidth = targetMaxWidth;
+                using var fallbackStream = OpenImageStream(filePath);
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                bmp.StreamSource = fallbackStream;
+                if (targetMaxWidth > 0 && origW > targetMaxWidth)
+                {
+                    bmp.DecodePixelWidth = targetMaxWidth;
+                }
+                bmp.EndInit();
+                bmp.Freeze();
+                sw.Stop();
+
+                int actualW = origW > 1 ? origW : bmp.PixelWidth;
+                int actualH = origH > 1 ? origH : bmp.PixelHeight;
+                _dimensionCache[filePath] = (actualW, actualH);
+
+                int bpp = Math.Max(8, bmp.Format.BitsPerPixel);
+                int bytesPerPixel = Math.Max(1, (bpp + 7) / 8);
+                long estBytes = (long)bmp.PixelWidth * bmp.PixelHeight * 4;
+
+                int uniqueColors = 0;
+                if (countColors && bytesPerPixel is 1 or 3 or 4)
+                {
+                    int w = bmp.PixelWidth;
+                    int h = bmp.PixelHeight;
+                    int stride = (w * bytesPerPixel + 3) & ~3;
+                    int bufLen = stride * h;
+                    byte[] pooled = ArrayPool<byte>.Shared.Rent(bufLen);
+                    try
+                    {
+                        bmp.CopyPixels(pooled, stride, 0);
+                        uniqueColors = CountUniqueColorsFast(pooled.AsSpan(0, bufLen), w, h, stride, bytesPerPixel);
+                    }
+                    catch
+                    {
+                        // Ignore color count failure
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(pooled);
+                    }
+                }
+
+                return new CachedPageEntry
+                {
+                    FilePath = filePath,
+                    Bitmap = bmp,
+                    OriginalWidth = actualW,
+                    OriginalHeight = actualH,
+                    EstimatedMemoryBytes = estBytes,
+                    BitsPerPixel = bpp,
+                    FormatShortName = bmp.Format.ToString().ToUpperInvariant(),
+                    PixelFormatInfo = $"{bpp}[bpp] ({bmp.Format})",
+                    LoadTimeMs = Math.Max(1, sw.ElapsedMilliseconds),
+                    UniqueColorCount = uniqueColors
+                };
             }
-            bmp.EndInit();
-            bmp.Freeze();
-            sw.Stop();
-
-            int actualW = origW > 1 ? origW : bmp.PixelWidth;
-            int actualH = origH > 1 ? origH : bmp.PixelHeight;
-            _dimensionCache[filePath] = (actualW, actualH);
-
-            int bpp = Math.Max(8, bmp.Format.BitsPerPixel);
-            int bytesPerPixel = Math.Max(1, (bpp + 7) / 8);
-            long estBytes = (long)bmp.PixelWidth * bmp.PixelHeight * 4;
-
-            int uniqueColors = 0;
-            if (countColors && bytesPerPixel is 1 or 3 or 4)
+            catch
             {
-                int w = bmp.PixelWidth;
-                int h = bmp.PixelHeight;
-                int stride = (w * bytesPerPixel + 3) & ~3;
-                int bufLen = stride * h;
-                byte[] pooled = ArrayPool<byte>.Shared.Rent(bufLen);
-                try
+                // ファイルが閲覧中に外部で移動・削除された場合でもクラッシュしないよう1x1透過ビットマップを返す
+                var emptyBmp = BitmapSource.Create(1, 1, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[4], 4);
+                emptyBmp.Freeze();
+                return new CachedPageEntry
                 {
-                    bmp.CopyPixels(pooled, stride, 0);
-                    uniqueColors = CountUniqueColorsFast(pooled.AsSpan(0, bufLen), w, h, stride, bytesPerPixel);
-                }
-                catch
-                {
-                    // Ignore color count failure
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(pooled);
-                }
+                    FilePath = filePath,
+                    Bitmap = emptyBmp,
+                    OriginalWidth = 1,
+                    OriginalHeight = 1,
+                    EstimatedMemoryBytes = 4,
+                    BitsPerPixel = 32,
+                    FormatShortName = "MISSING",
+                    PixelFormatInfo = "32[bpp] (MISSING)",
+                    LoadTimeMs = 0,
+                    UniqueColorCount = 0
+                };
             }
-
-            return new CachedPageEntry
-            {
-                FilePath = filePath,
-                Bitmap = bmp,
-                OriginalWidth = actualW,
-                OriginalHeight = actualH,
-                EstimatedMemoryBytes = estBytes,
-                BitsPerPixel = bpp,
-                FormatShortName = bmp.Format.ToString().ToUpperInvariant(),
-                PixelFormatInfo = $"{bpp}[bpp] ({bmp.Format})",
-                LoadTimeMs = Math.Max(1, sw.ElapsedMilliseconds),
-                UniqueColorCount = uniqueColors
-            };
         }
     }
 

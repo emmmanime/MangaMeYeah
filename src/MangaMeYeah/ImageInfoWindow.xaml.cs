@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +22,8 @@ public sealed class DisplayedSlotInfo
 public partial class ImageInfoWindow : Window
 {
     private readonly MainWindow? _mainWindow;
+    private int _lastColCount = -1;
+    private int _lastRowCount = -1;
 
     public ImageInfoWindow(
         IReadOnlyList<DisplayedSlotInfo> slots,
@@ -44,25 +47,49 @@ public partial class ImageInfoWindow : Window
         int rows = Math.Max(1, totalRows);
         int cols = Math.Max(1, totalColumns);
 
+        // 横並びの枚数（1枚 / 横2・縦横2×2 / 横3 / 横4）に応じた値カラムの初期・最小幅
+        double valueColMinWidth = cols switch
+        {
+            1 => 360,
+            2 => 290,
+            3 => 240,
+            _ => 200
+        };
+
+        double singleCellMinWidth = 98 + valueColMinWidth + 6;
+
         for (int r = 0; r < rows; r++)
         {
             InfoLayoutGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         }
         for (int c = 0; c < cols; c++)
         {
-            InfoLayoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            InfoLayoutGrid.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                Width = new GridLength(1, GridUnitType.Star),
+                MinWidth = singleCellMinWidth
+            });
         }
 
-        // 横並びの枚数に応じて値カラムの表示幅を自動調整 (長いファイル名やパスが読みやすいよう拡大)
-        double valueColWidth = cols switch
-        {
-            1 => 380,
-            2 => 310,
-            3 => 260,
-            _ => 220
-        };
+        PopulateSlotGridRecursive(slots, 0, InfoLayoutGrid, valueColMinWidth);
 
-        PopulateSlotGridRecursive(slots, 0, InfoLayoutGrid, valueColWidth);
+        // 初回表示時、または列数・行数が変化した時（単ページ⇔見開き⇔縦横2×2⇔横4枚など）にウィンドウサイズを最適化
+        if (_lastColCount != cols || _lastRowCount != rows)
+        {
+            _lastColCount = cols;
+            _lastRowCount = rows;
+
+            double screenMaxW = SystemParameters.WorkArea.Width * 0.95;
+            double screenMaxH = SystemParameters.WorkArea.Height * 0.92;
+
+            double desiredWidth = Math.Min(screenMaxW, cols * singleCellMinWidth + 32);
+            double singleCellHeight = 10 * 19 + 56 + 6; // 10行(19px) + その他(56px) + 枠余白
+            double desiredHeight = Math.Min(screenMaxH, rows * singleCellHeight + 78);
+
+            MinWidth = Math.Min(screenMaxW, Math.Max(420, cols * 260 + 28));
+            Width = Math.Max(MinWidth, desiredWidth);
+            Height = Math.Max(310, desiredHeight);
+        }
     }
 
     private void ImageInfoWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -78,7 +105,7 @@ public partial class ImageInfoWindow : Window
         IReadOnlyList<DisplayedSlotInfo> slots,
         int currentIndex,
         Grid targetGrid,
-        double valueColumnWidth)
+        double valueColumnMinWidth)
     {
         if (currentIndex >= slots.Count)
         {
@@ -86,22 +113,60 @@ public partial class ImageInfoWindow : Window
         }
 
         var slot = slots[currentIndex];
-        FrameworkElement cellPanel = CreateSingleImageInfoTable(slot, valueColumnWidth);
+        FrameworkElement cellPanel = CreateSingleImageInfoTable(slot, valueColumnMinWidth);
         Grid.SetRow(cellPanel, slot.Row);
         Grid.SetColumn(cellPanel, slot.Column);
         targetGrid.Children.Add(cellPanel);
 
         // 次の枚数を再帰的に配置
-        PopulateSlotGridRecursive(slots, currentIndex + 1, targetGrid, valueColumnWidth);
+        PopulateSlotGridRecursive(slots, currentIndex + 1, targetGrid, valueColumnMinWidth);
     }
 
-    private static FrameworkElement CreateSingleImageInfoTable(DisplayedSlotInfo slot, double valueColumnWidth)
+    private static FrameworkElement CreateSingleImageInfoTable(DisplayedSlotInfo slot, double valueColumnMinWidth)
     {
-        var fi = new FileInfo(slot.Entry.FilePath);
-        long fileSizeBytes = fi.Exists ? fi.Length : 0;
-        string updateTimeStr = fi.Exists
-            ? fi.LastWriteTime.ToString("yyyy年M月d日  H:mm:ss")
-            : "-";
+        string filePath = slot.Entry.FilePath;
+        string displayFileName;
+        string displayPath;
+        long fileSizeBytes = 0;
+        string updateTimeStr = "-";
+
+        if (ArchiveImageService.IsArchiveEntryPath(filePath))
+        {
+            var (archPath, entryKey) = ArchiveImageService.SplitArchiveEntryPath(filePath);
+            if (entryKey.Contains('|'))
+            {
+                int lastPipe = entryKey.LastIndexOf('|');
+                string subArch = entryKey[..lastPipe].Replace('/', '\\');
+                string innerEntry = entryKey[(lastPipe + 1)..];
+                displayFileName = innerEntry.Replace('/', '\\');
+                displayPath = $"{archPath}\\{subArch}";
+            }
+            else
+            {
+                displayFileName = entryKey.Replace('/', '\\');
+                displayPath = archPath;
+            }
+
+            if (ArchiveImageService.TryGetEntryMetadata(filePath, out long uncompSize, out DateTime? entryTime))
+            {
+                fileSizeBytes = uncompSize;
+                if (entryTime.HasValue)
+                {
+                    updateTimeStr = entryTime.Value.ToString("yyyy年M月d日  H:mm:ss");
+                }
+            }
+        }
+        else
+        {
+            var fi = new FileInfo(filePath);
+            displayFileName = fi.Name;
+            displayPath = fi.DirectoryName ?? string.Empty;
+            if (fi.Exists)
+            {
+                fileSizeBytes = fi.Length;
+                updateTimeStr = fi.LastWriteTime.ToString("yyyy年M月d日  H:mm:ss");
+            }
+        }
 
         string origSizeStr = $"{slot.Entry.OriginalWidth}×{slot.Entry.OriginalHeight} {slot.Entry.PixelFormatInfo}";
         string dispSizeStr = $"{slot.DisplayedWidth}×{slot.DisplayedHeight} {slot.Entry.PixelFormatInfo}";
@@ -118,8 +183,8 @@ public partial class ImageInfoWindow : Window
 
         (string Label, string Value)[] rows =
         [
-            ("ファイル名", fi.Name),
-            ("パス", fi.DirectoryName ?? string.Empty),
+            ("ファイル名", displayFileName),
+            ("パス", displayPath),
             ("ファイルサイズ", $"{fileSizeBytes:N0} [byte]"),
             ("更新日時", updateTimeStr),
             ("原寸サイズ", origSizeStr),
@@ -132,10 +197,15 @@ public partial class ImageInfoWindow : Window
 
         var tableGrid = new Grid
         {
-            Background = Brushes.White
+            Background = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Stretch
         };
         tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(98) });
-        tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(valueColumnWidth) });
+        tableGrid.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(1, GridUnitType.Star),
+            MinWidth = valueColumnMinWidth
+        });
 
         var labelBgBrush = new SolidColorBrush(Color.FromRgb(196, 196, 196));
         var dashStrokeBrush = new SolidColorBrush(Color.FromRgb(156, 156, 156));
@@ -162,22 +232,34 @@ public partial class ImageInfoWindow : Window
             Grid.SetColumn(labelCell, 0);
             tableGrid.Children.Add(labelCell);
 
-            // 右カラム (白背景 + コピー・横スクロール可能な値 + 即時ツールチップ + 下部破線)
+            // 右カラム (白背景 + 横リサイズ追従 + 枠から溢れている時のみツールチップ表示 + 下部破線)
             var valueCell = new Grid { Background = Brushes.White };
+            string rowText = rows[i].Value;
             var valueBox = new TextBox
             {
-                Text = rows[i].Value,
-                ToolTip = rows[i].Value,
+                Text = rowText,
+                ToolTip = rowText,
                 FontSize = 12,
                 Foreground = Brushes.Black,
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
                 IsReadOnly = true,
                 VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(4, 0, 4, 0),
                 Padding = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.IBeam
             };
+
+            // 表示域に収まっている場合はマウスオーバーのツールチップを表示しない
+            valueBox.ToolTipOpening += (_, e) =>
+            {
+                if (!IsTextBoxContentOverflowing(valueBox))
+                {
+                    e.Handled = true;
+                }
+            };
+
             labelCell.MouseLeftButtonDown += (_, _) => valueBox.Focus();
             ToolTipService.SetInitialShowDelay(valueBox, 100);
             ToolTipService.SetShowDuration(valueBox, 15000);
@@ -232,8 +314,34 @@ public partial class ImageInfoWindow : Window
             BorderBrush = new SolidColorBrush(Color.FromRgb(160, 160, 160)),
             BorderThickness = new Thickness(1),
             Margin = new Thickness(2),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
             Child = tableGrid
         };
+    }
+
+    private static bool IsTextBoxContentOverflowing(TextBox textBox)
+    {
+        if (string.IsNullOrEmpty(textBox.Text)) return false;
+
+        if (textBox.ViewportWidth > 0 && textBox.ExtentWidth > 0)
+        {
+            return textBox.ExtentWidth > textBox.ViewportWidth + 1.0;
+        }
+
+        double availableWidth = textBox.ActualWidth;
+        if (availableWidth <= 0) return false;
+
+        var dpi = VisualTreeHelper.GetDpi(textBox);
+        var formatted = new FormattedText(
+            textBox.Text,
+            CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight,
+            new Typeface(textBox.FontFamily, textBox.FontStyle, textBox.FontWeight, textBox.FontStretch),
+            textBox.FontSize,
+            Brushes.Black,
+            dpi.PixelsPerDip);
+
+        return formatted.Width > availableWidth - 2.0;
     }
 
     private static Rectangle CreateBottomDashedLine(Brush strokeBrush)

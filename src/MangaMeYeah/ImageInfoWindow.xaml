@@ -2,10 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="画像情報"
-        SizeToContent="WidthAndHeight"
-        MinWidth="480"
-        MaxWidth="1800"
-        MaxHeight="920"
+        MinWidth="460"
+        MinHeight="280"
+        MaxHeight="940"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
@@ -16,11 +15,11 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 複数枚表示のレイアウト（横2/縦2/横3/縦3/横4/縦4/2×2）通りにセルが並ぶコンテナ -->
+        <!-- 複数枚表示のレイアウト（横2/縦2/横3/縦3/横4/縦4/2×2）通りにセルが並び、横リサイズに追従して全列が均等拡大されるコンテナ -->
         <ScrollViewer Grid.Row="0"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto">
-            <Grid x:Name="InfoLayoutGrid" />
+            <Grid x:Name="InfoLayoutGrid" HorizontalAlignment="Stretch" />
         </ScrollViewer>
 
         <!-- 下部 OK ボタン (MangaMeeya 準拠の中央配置) -->
@@ -30,6 +29,7 @@
                 Height="26"
                 Margin="0,8,0,0"
                 HorizontalAlignment="Center"
+                IsDefault="True"
                 Click="OkButton_Click" />
     </Grid>
 </Window>

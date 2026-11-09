@@ -55,6 +55,8 @@ public partial class PreferencesWindow : Window
         SubfolderExcludeRadio.IsChecked = _settings.SubfolderReadMode == 2;
         IncludeFolderArchivesCheck.IsChecked = _settings.IncludeFolderArchivesAsSubfolders;
         IncludeArchiveArchivesCheck.IsChecked = _settings.IncludeArchiveArchivesAsSubfolders;
+        OpenArchivesOnlyCheck.IsChecked = _settings.OpenArchivesOnly;
+        RememberPagePositionCheck.IsChecked = _settings.RememberPagePosition;
         InitialFolderTextBox.Text = _settings.InitialFolderPath;
         OpenFromStartRadio.IsChecked = _settings.StartupOpenMode != 3;
         OpenThumbnailRadio.IsChecked = _settings.StartupOpenMode == 3;
@@ -91,6 +93,9 @@ public partial class PreferencesWindow : Window
         ShowOsdTextCheck.IsChecked = _settings.ShowOsdText;
         FullScreenHideCursorCheck.IsChecked = _settings.FullScreenHideCursor;
         FullScreenTopMostCheck.IsChecked = _settings.FullScreenTopMost;
+        RealTimeSeekPreviewCheck.IsChecked = _settings.RealTimeSeekPreview;
+        MenuStyleRetroRadio.IsChecked = !_settings.IsModernMenuStyle;
+        MenuStyleModernRadio.IsChecked = _settings.IsModernMenuStyle;
         OpenLastFileCheck.IsChecked = _settings.OpenLastFileOnStartup;
         SaveWindowPlacementCheck.IsChecked = _settings.SaveWindowPlacementOnExit;
         PreventMultipleInstancesCheck.IsChecked = _settings.PreventMultipleInstances;
@@ -146,6 +151,8 @@ public partial class PreferencesWindow : Window
         else _settings.SubfolderReadMode = 1;
         _settings.IncludeFolderArchivesAsSubfolders = IncludeFolderArchivesCheck.IsChecked == true;
         _settings.IncludeArchiveArchivesAsSubfolders = IncludeArchiveArchivesCheck.IsChecked == true;
+        _settings.OpenArchivesOnly = OpenArchivesOnlyCheck.IsChecked == true;
+        _settings.RememberPagePosition = RememberPagePositionCheck.IsChecked == true;
         _settings.InitialFolderPath = InitialFolderTextBox.Text.Trim();
         _settings.StartupOpenMode = OpenThumbnailRadio.IsChecked == true ? 3 : 1;
         _settings.AddBlankFirstPage = AddBlankFirstPageCheck.IsChecked == true;
@@ -181,6 +188,8 @@ public partial class PreferencesWindow : Window
         _settings.ShowOsdText = ShowOsdTextCheck.IsChecked == true;
         _settings.FullScreenHideCursor = FullScreenHideCursorCheck.IsChecked == true;
         _settings.FullScreenTopMost = FullScreenTopMostCheck.IsChecked == true;
+        _settings.RealTimeSeekPreview = RealTimeSeekPreviewCheck.IsChecked == true;
+        _settings.IsModernMenuStyle = MenuStyleModernRadio.IsChecked == true;
         _settings.OpenLastFileOnStartup = OpenLastFileCheck.IsChecked == true;
         _settings.SaveWindowPlacementOnExit = SaveWindowPlacementCheck.IsChecked == true;
         _settings.PreventMultipleInstances = PreventMultipleInstancesCheck.IsChecked == true;
@@ -289,6 +298,11 @@ public partial class PreferencesWindow : Window
             InitialFolderTextBox.Text = dlg.FolderName;
             ApplyButton.IsEnabled = true;
         }
+    }
+
+    private void EditConnectedFoldersConfig_Click(object sender, RoutedEventArgs e)
+    {
+        ConnectedFoldersConfigService.OpenConfigFileInEditor(this);
     }
 
     private void BgColorHexTextBox_TextChanged(object sender, TextChangedEventArgs e)

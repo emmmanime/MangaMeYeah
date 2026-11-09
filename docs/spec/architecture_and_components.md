@@ -26,6 +26,7 @@ MangaMeYeah! は、C# .NET 8 および Windows Presentation Foundation (WPF) を
 │  ├─ PageCacheEngine (デコード・LRU・先読みスレッド)       │
 │  ├─ ArchiveImageService (SharpCompress 書庫展開)       │
 │  ├─ ConnectedImageDetector (24通り分割画像自動結合)      │
+│  ├─ ConnectedFoldersConfigService (連結自動ONフォルダ判定)│
 │  ├─ ImageFolderService (階層自然順グループソート)       │
 │  ├─ QuickSaveService (QS1〜QS4 ファイルコピー・移動)    │
 │  └─ ExplorerContextMenuService (HKCU レジストリ登録)   │
@@ -60,6 +61,7 @@ src/MangaMeYeah/
       ├── PageCacheEngine.cs           # 先読み・LRUキャッシュ管理エンジン
       ├── ArchiveImageService.cs       # ZIP/CBZ, RAR, 7z, TAR, ネスト書庫オンメモリストリーム展開
       ├── ConnectedImageDetector.cs    # 連番画像の境界色差解析・24順列全探索結合
+      ├── ConnectedFoldersConfigService.cs # connected_folders.txt によるフォルダー別連結自動ON管理
       ├── ImageFolderService.cs        # 階層自然順ソート・兄弟フォルダ先行探索
       ├── MouseGestureEngine.cs        # 右ドラッグ軌跡解析・コード操作判定
       ├── QuickSaveService.cs          # クイックセーブ実行エンジン
