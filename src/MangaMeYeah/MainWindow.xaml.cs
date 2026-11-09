@@ -77,7 +77,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private MouseButton _longPressCandidateButton;
 
     // ナビゲーション履歴管理（前へ戻る時に正確に直前の表示グループ・枚数に戻す）
-    private readonly Stack<int> _navigationHistory = new();
     private PageDisplayMode _savedMultiPageMode = PageDisplayMode.TwoPage;
 
     // 左上 OSD タイマー
@@ -727,7 +726,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _activeConnectedOverride = null;
         _settings.LastOpenedPath = path;
         _cacheEngine.Clear();
-        _navigationHistory.Clear();
 
         if (_imageFiles.Count == 0)
         {
@@ -1357,7 +1355,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_currentIndex > firstIdx)
         {
             // 現在位置が途中または末尾なら、現在の関連画像並びの先頭へジャンプ
-            _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = firstIdx;
             RenderCurrentPage();
@@ -1380,7 +1377,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     break;
                 }
             }
-            _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = targetIdx;
             RenderCurrentPage();
@@ -1416,7 +1412,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_currentIndex < lastIdx)
         {
             // 現在位置が先頭または途中なら、現在の関連画像並びの最後尾へジャンプ
-            _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = lastIdx;
             RenderCurrentPage();
@@ -1427,7 +1422,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             // すでに最後尾にいた場合、次の関連画像並びの先頭へスキップ
             int targetIdx = lastIdx + 1;
             string nextCreatorPrefix = ImageFolderService.GetCreatorPrefix(_imageFiles[targetIdx]);
-            _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = targetIdx;
             RenderCurrentPage();
@@ -1529,10 +1523,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_currentIndex + step < _imageFiles.Count)
         {
-            if (step > 0)
-            {
-                _navigationHistory.Push(_currentIndex);
-            }
             _forcedTwoPageIndex = -1;
             _currentIndex += step;
             RenderCurrentPage();
@@ -1579,6 +1569,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        bool wasTempSingle = _isTempSinglePage;
         RestoreMultiPageIfTempSingle();
 
         if (_currentIndex <= 0)
@@ -1614,34 +1605,33 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _forcedTwoPageIndex = -1;
 
-        // 1. 直前のナビゲーション履歴があれば正確に元の開始インデックスに戻す (4枚連結などの逆順復元)
-        while (_navigationHistory.Count > 0)
+        // 一時的な1ページ表示（1枚ずらし）から右クリックで直接戻る場合は1枚戻して見開きへ復帰
+        if (wasTempSingle)
         {
-            int prevIdx = _navigationHistory.Pop();
-            if (prevIdx < _currentIndex && prevIdx >= 0 && prevIdx < _imageFiles.Count && FileExistsOrArchiveExists(_imageFiles[prevIdx]))
-            {
-                _currentIndex = prevIdx;
-                RenderCurrentPage();
-                return;
-            }
+            _currentIndex = Math.Max(0, _currentIndex - 1);
+            RenderCurrentPage();
+            return;
         }
 
-        // 2. 履歴がない場合（直接ジャンプ等）、手前の画像が4枚・3枚・2枚連結グループか後方判定
+        // 手前の画像が4枚・3枚・2枚連結グループか後方判定（連結画像検出ON時のみ）
         int candidateStep = 0;
-        if (_currentIndex >= 4)
+        if (_settings.AutoDetectConnectedImages)
         {
-            var g4 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 4, _cacheEngine, _settings);
-            if (g4 != null && g4.ImageCount == 4) candidateStep = 4;
-        }
-        if (candidateStep == 0 && _currentIndex >= 3)
-        {
-            var g3 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 3, _cacheEngine, _settings);
-            if (g3 != null && g3.ImageCount == 3) candidateStep = 3;
-        }
-        if (candidateStep == 0 && _currentIndex >= 2)
-        {
-            var g2 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 2, _cacheEngine, _settings);
-            if (g2 != null && g2.ImageCount == 2) candidateStep = 2;
+            if (_currentIndex >= 4)
+            {
+                var g4 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 4, _cacheEngine, _settings);
+                if (g4 != null && g4.ImageCount == 4) candidateStep = 4;
+            }
+            if (candidateStep == 0 && _currentIndex >= 3)
+            {
+                var g3 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 3, _cacheEngine, _settings);
+                if (g3 != null && g3.ImageCount == 3) candidateStep = 3;
+            }
+            if (candidateStep == 0 && _currentIndex >= 2)
+            {
+                var g2 = ConnectedImageDetector.DetectConnectedGroup(_imageFiles, _currentIndex - 2, _cacheEngine, _settings);
+                if (g2 != null && g2.ImageCount == 2) candidateStep = 2;
+            }
         }
 
         if (candidateStep > 0)
@@ -1680,7 +1670,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int next = Math.Clamp(_currentIndex + delta, 0, _imageFiles.Count - 1);
         if (next != _currentIndex)
         {
-            _navigationHistory.Push(_currentIndex);
             _forcedTwoPageIndex = -1;
             _currentIndex = next;
             RenderCurrentPage();
