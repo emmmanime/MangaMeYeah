@@ -1,6 +1,6 @@
-; Inno Setup Script for MangaMeYeah v0.3.5
-#define MyAppName "MangaMeYeah"
-#define MyAppVersion "0.3.5"
+; Inno Setup Script for MangaMeYeah v0.4.3
+#define MyAppName "MangaMeYeah!"
+#define MyAppVersion "0.4.3"
 #define MyAppPublisher "emmmanime"
 #define MyAppURL "https://github.com/emmmanime/MangaMeYeah"
 #define MyAppExeName "MangaMeYeah.exe"
@@ -13,12 +13,12 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\MangaMeYeah
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=..\LICENSE
 OutputDir=..\release
-OutputBaseFilename=MangaMeYeah-v0.3.5-Setup
+OutputBaseFilename=MangaMeYeah-v0.4.3-Setup
 SetupIconFile=..\src\MangaMeYeah\Assets\MangaMeYeah.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
